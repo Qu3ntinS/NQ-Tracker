@@ -45,3 +45,12 @@
 .delete-button {
     background-color: #ff4d4f;
 }
+
+.task {
+    transition: background-color 0.2s;
+}
+
+.task.dragging, .task.resizing {
+    background-color: #4caf50; /* Andere Farbe beim Interagieren */
+    opacity: 0.8;
+}

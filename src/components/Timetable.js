@@ -1,23 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Task from "./Task";
+import interact from "interactjs";
 import "./Timetable.css";
 
-// Generiert Zeitoptionen in Minuten und Stunden bis zu 24 Stunden
-const generateDurationOptions = () => {
-    const options = [];
-    for (let i = 15; i <= 1440; i += 15) { // bis zu 1440 Minuten (24 Stunden) in 15-Minuten-Schritten
-        if (i < 60) {
-            options.push({ label: `${i} min`, value: i });
-        } else {
-            const hours = Math.floor(i / 60);
-            const minutes = i % 60;
-            const label = minutes === 0 ? `${hours}h` : `${hours}:${minutes}h`;
-            options.push({ label, value: i });
-        }
-    }
-    return options;
-};
-
+// Generiert die 15-Minuten-Zeit-Slots für die Timeline
 const generateTimeSlots = () => {
     const times = [];
     for (let hour = 0; hour < 24; hour++) {
@@ -31,42 +17,62 @@ const generateTimeSlots = () => {
     return times;
 };
 
-const getRoundedCurrentTime = () => {
-    const now = new Date();
-    let hours = now.getHours();
-    let minutes = now.getMinutes();
-
-    minutes = Math.ceil(minutes / 15) * 15;
-    if (minutes === 60) {
-        minutes = 0;
-        hours = (hours + 1) % 24;
-    }
-
-    return `${hours.toString().padStart(2, "0")}:${minutes
-        .toString()
-        .padStart(2, "0")}`;
-};
-
 const Timetable = ({ tasks, onTasksChange }) => {
-    const [taskDescription, setTaskDescription] = useState("");
-    const [startTime, setStartTime] = useState(getRoundedCurrentTime());
-    const [duration, setDuration] = useState(15);
-
+    const [newTask, setNewTask] = useState(null); // Temporärer Task während des Ziehens
     const timeSlots = generateTimeSlots();
-    const durationOptions = generateDurationOptions();
 
-    const addTask = () => {
-        const newTask = {
-            id: Date.now(),
-            description: taskDescription,
-            startTime,
-            duration,
-        };
-        onTasksChange([...tasks, newTask]);
-        setTaskDescription("");
-        setStartTime(getRoundedCurrentTime());
-        setDuration(15);
-    };
+    useEffect(() => {
+        // Initialisiere Interact.js für das Erstellen durch Ziehen auf der Timeline
+        interact(".timeline")
+            .draggable({
+                modifiers: [
+                    interact.modifiers.snap({
+                        targets: [interact.snappers.grid({ x: 0, y: 20 })], // Snap alle 20px für 15 Minuten
+                        range: Infinity,
+                        relativePoints: [{ x: 0, y: 0 }],
+                    }),
+                ],
+                listeners: {
+                    start(event) {
+                        // Berechne die Startzeit basierend auf der y-Position des Ziehens
+                        const startY = event.clientY - event.target.getBoundingClientRect().top;
+                        const startMinutes = Math.floor(startY / 20) * 15;
+                        const startHour = Math.floor(startMinutes / 60);
+                        const startMinute = startMinutes % 60;
+                        const formattedStartTime = `${startHour.toString().padStart(2, "0")}:${startMinute
+                            .toString()
+                            .padStart(2, "0")}`;
+
+                        // Erstelle temporären Task mit einer Anfangsdauer von 15 Minuten
+                        setNewTask({ startTime: formattedStartTime, duration: 15, top: startY });
+                    },
+                    move(event) {
+                        // Dynamisches Erweitern des Tasks beim Ziehen
+                        if (newTask) {
+                            const newHeight = (newTask.duration / 15) * 20 + event.dy;
+                            const newDuration = Math.max(Math.round(newHeight / 20) * 15, 15); // Dauer in 15-Minuten-Schritten
+                            setNewTask({ ...newTask, duration: newDuration });
+                        }
+                    },
+                    end(event) {
+                        // Eingabeaufforderung für die Beschreibung nach dem Loslassen
+                        if (newTask) {
+                            const description = prompt("Gib eine Beschreibung für den Task ein:");
+                            if (description) {
+                                const task = {
+                                    id: Date.now(),
+                                    description,
+                                    startTime: newTask.startTime,
+                                    duration: newTask.duration,
+                                };
+                                onTasksChange([...tasks, task]);
+                            }
+                            setNewTask(null); // Entferne temporären Task nach Erstellung
+                        }
+                    },
+                },
+            });
+    }, [newTask, tasks, onTasksChange]);
 
     const deleteTask = (taskId) => {
         const updatedTasks = tasks.filter((task) => task.id !== taskId);
@@ -75,63 +81,42 @@ const Timetable = ({ tasks, onTasksChange }) => {
 
     const editTask = (taskId, newDescription, newDuration) => {
         const updatedTasks = tasks.map((task) =>
-            task.id === taskId ? { ...task, description: newDescription, duration: newDuration } : task
+            task.id === taskId
+                ? { ...task, description: newDescription, duration: newDuration }
+                : task
         );
         onTasksChange(updatedTasks);
     };
 
-    const getTaskStyle = (task) => {
-        const startIndex = timeSlots.indexOf(task.startTime);
-        const taskHeight = (task.duration / 15) * 20;
-        return {
-            top: `${startIndex * 20}px`,
-            height: `${taskHeight}px`,
-        };
-    };
-
     return (
         <div className="timetable-container">
-            <div className="form-container">
-                <input
-                    type="text"
-                    placeholder="Task Beschreibung"
-                    value={taskDescription}
-                    onChange={(e) => setTaskDescription(e.target.value)}
-                />
-                <select
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                >
-                    {timeSlots.map((time) => (
-                        <option key={time} value={time}>
-                            {time}
-                        </option>
-                    ))}
-                </select>
-                <select
-                    value={duration}
-                    onChange={(e) => setDuration(parseInt(e.target.value, 10))}
-                >
-                    {durationOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                            {option.label}
-                        </option>
-                    ))}
-                </select>
-                <button onClick={addTask}>Aufgabe hinzufügen</button>
-            </div>
-
             <div className="timeline">
-                {timeSlots.map((time) => (
-                    <div key={time} className="time-slot">
+                {/* Zeit-Slots für die Timeline */}
+                {timeSlots.map((time, index) => (
+                    <div key={index} className={`time-slot ${index % 4 === 0 ? 'hour-marker' : ''}`}>
                         <span>{time}</span>
                     </div>
                 ))}
+
+                {/* Temporärer Task während des Ziehens */}
+                {newTask && (
+                    <div
+                        className="task"
+                        style={{
+                            top: `${newTask.top}px`,
+                            height: `${(newTask.duration / 15) * 20}px`,
+                            backgroundColor: "#ddd",
+                        }}
+                    >
+                        Temporärer Task
+                    </div>
+                )}
+
+                {/* Aufgaben auf der Timeline anzeigen */}
                 {tasks.map((task) => (
                     <Task
                         key={task.id}
                         task={task}
-                        getTaskStyle={getTaskStyle}
                         onDelete={deleteTask}
                         onEdit={editTask}
                     />
