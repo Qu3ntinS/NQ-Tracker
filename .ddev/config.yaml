@@ -5,7 +5,7 @@ php_version: "8.2"
 webserver_type: nginx-fpm
 xdebug_enabled: false
 additional_hostnames:
-  - "api.timetable"
+  - "api.nq-tracker"
 additional_fqdns: []
 database:
   type: mysql
