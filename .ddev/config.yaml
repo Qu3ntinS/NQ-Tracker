@@ -1,0 +1,20 @@
+name: timetable
+type: php
+docroot: ""
+php_version: "8.2"
+webserver_type: nginx-fpm
+xdebug_enabled: false
+additional_hostnames:
+  - "api.timetable"
+additional_fqdns: []
+database:
+  type: mariadb
+  version: "10.11"
+use_dns_when_possible: true
+composer_version: "2"
+web_environment: []
+corepack_enable: false
+nodejs_version: "22"
+hooks:
+  post-start:
+    - exec: "pm2 start apps.config.js"
