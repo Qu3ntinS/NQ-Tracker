@@ -1,6 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Task from "./Task";
 import "./Timetable.css";
+
+// Generiert Zeitoptionen in Minuten und Stunden bis zu 24 Stunden
+const generateDurationOptions = () => {
+    const options = [];
+    for (let i = 15; i <= 1440; i += 15) { // bis zu 1440 Minuten (24 Stunden) in 15-Minuten-Schritten
+        if (i < 60) {
+            options.push({ label: `${i} min`, value: i });
+        } else {
+            const hours = Math.floor(i / 60);
+            const minutes = i % 60;
+            const label = minutes === 0 ? `${hours}h` : `${hours}:${minutes}h`;
+            options.push({ label, value: i });
+        }
+    }
+    return options;
+};
 
 const generateTimeSlots = () => {
     const times = [];
@@ -15,20 +31,17 @@ const generateTimeSlots = () => {
     return times;
 };
 
-// Funktion, um die aktuelle Zeit auf die nächste 15-Minuten-Einheit zu runden
 const getRoundedCurrentTime = () => {
     const now = new Date();
     let hours = now.getHours();
     let minutes = now.getMinutes();
 
-    // Runde auf die nächste 15-Minuten-Einheit auf
     minutes = Math.ceil(minutes / 15) * 15;
     if (minutes === 60) {
         minutes = 0;
-        hours = (hours + 1) % 24; // Falls Stunden überlaufen, auf 00 setzen
+        hours = (hours + 1) % 24;
     }
 
-    // Rückgabe im Format HH:MM
     return `${hours.toString().padStart(2, "0")}:${minutes
         .toString()
         .padStart(2, "0")}`;
@@ -40,17 +53,18 @@ const Timetable = ({ tasks, onTasksChange }) => {
     const [duration, setDuration] = useState(15);
 
     const timeSlots = generateTimeSlots();
+    const durationOptions = generateDurationOptions();
 
     const addTask = () => {
         const newTask = {
-            id: Date.now(), // Verwende Zeitstempel als eindeutige ID
+            id: Date.now(),
             description: taskDescription,
             startTime,
             duration,
         };
         onTasksChange([...tasks, newTask]);
         setTaskDescription("");
-        setStartTime(getRoundedCurrentTime()); // Setze `startTime` zurück auf die aktuelle Zeit
+        setStartTime(getRoundedCurrentTime());
         setDuration(15);
     };
 
@@ -59,9 +73,16 @@ const Timetable = ({ tasks, onTasksChange }) => {
         onTasksChange(updatedTasks);
     };
 
+    const editTask = (taskId, newDescription, newDuration) => {
+        const updatedTasks = tasks.map((task) =>
+            task.id === taskId ? { ...task, description: newDescription, duration: newDuration } : task
+        );
+        onTasksChange(updatedTasks);
+    };
+
     const getTaskStyle = (task) => {
         const startIndex = timeSlots.indexOf(task.startTime);
-        const taskHeight = (task.duration / 15) * 20; // 20px pro 15-Minuten-Block
+        const taskHeight = (task.duration / 15) * 20;
         return {
             top: `${startIndex * 20}px`,
             height: `${taskHeight}px`,
@@ -87,13 +108,16 @@ const Timetable = ({ tasks, onTasksChange }) => {
                         </option>
                     ))}
                 </select>
-                <input
-                    type="number"
-                    min="15"
-                    step="15"
+                <select
                     value={duration}
                     onChange={(e) => setDuration(parseInt(e.target.value, 10))}
-                />
+                >
+                    {durationOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
                 <button onClick={addTask}>Aufgabe hinzufügen</button>
             </div>
 
@@ -109,6 +133,7 @@ const Timetable = ({ tasks, onTasksChange }) => {
                         task={task}
                         getTaskStyle={getTaskStyle}
                         onDelete={deleteTask}
+                        onEdit={editTask}
                     />
                 ))}
             </div>

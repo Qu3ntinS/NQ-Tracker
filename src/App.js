@@ -39,7 +39,7 @@ const App = () => {
 
   return (
       <div className="App">
-        <h1>Timetable Tracker mit localStorage-Unterstützung</h1>
+        <h1>NQ-Tracker</h1>
         <div className="day-selector">
           <input
               type="date"

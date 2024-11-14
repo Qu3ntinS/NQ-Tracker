@@ -17,12 +17,31 @@
     padding: 2px 5px;
 }
 
+.task-duration {
+    margin-left: auto;
+    padding-right: 5px;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.task-edit {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.edit-button,
+.save-button,
 .delete-button {
-    background-color: #ff4d4f;
+    background-color: #ff9800;
     border: none;
     color: white;
     font-size: 10px;
     padding: 2px 5px;
     border-radius: 3px;
     cursor: pointer;
+}
+
+.delete-button {
+    background-color: #ff4d4f;
 }
