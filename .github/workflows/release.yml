@@ -10,6 +10,9 @@ on:
         description: "Release version tag (e.g. v0.1.0)"
         required: true
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -20,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -31,9 +36,18 @@ jobs:
 
       - name: Set tag (manual trigger)
         if: github.event_name == 'workflow_dispatch'
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
         run: |
-          git tag ${{ inputs.version }}
-          git push origin ${{ inputs.version }}
+          set -euo pipefail
+          if [[ ! "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9._-]+)?$ ]]; then
+            echo "Invalid version: $RELEASE_VERSION" >&2
+            exit 1
+          fi
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag "$RELEASE_VERSION"
+          git push origin "$RELEASE_VERSION"
 
       - name: Build & Release
         env:
