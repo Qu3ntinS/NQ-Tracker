@@ -396,14 +396,14 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        <div style={{ height: totalHeight, paddingLeft: 56 }} className="relative">
+        <div style={{ height: totalHeight }} className="relative">
           {Array.from({ length: 48 }).map((_, i) => {
             const mins = i * 30;
             const top = mins * minuteHeight;
             const labelH = Math.floor(mins / 60).toString().padStart(2, "0");
             const labelM = (mins % 60).toString().padStart(2, "0");
             return (
-              <div key={`t-${i}`} className="absolute -left-1 w-12 text-[10px] text-purple-200/60" style={{ top: top - 6 }}>
+              <div key={`t-${i}`} className="absolute left-0 w-12 text-[10px] text-purple-200/60 pointer-events-none" style={{ top: top - 6 }}>
                 {labelH}:{labelM}
               </div>
             );
@@ -415,7 +415,7 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
           ))}
 
           {isToday && (
-            <div className="absolute left-0 right-2" style={{ top: nowLineTop }}>
+            <div className="absolute left-14 right-2" style={{ top: nowLineTop }}>
               <div className="h-[1px] bg-brand-400" />
               <div className="text-[10px] text-brand-300">{format(now, "HH:mm")}</div>
             </div>
@@ -423,7 +423,7 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
 
           {dragging && previewStart !== null && (
             <div
-              className="absolute left-0 right-2 rounded-xl bg-brand-400/20 border border-brand-300/40"
+              className="absolute left-14 right-2 rounded-xl bg-brand-400/20 border border-brand-300/40"
               style={{ top: previewStart * minuteHeight, height: previewHeightMinutes * minuteHeight }}
             >
               <div className="p-2 text-[10px] text-brand-100">Neuer Eintrag</div>
@@ -439,8 +439,8 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
             return (
               <Rnd
                 key={entry.id}
-                size={{ width: "calc(100% - 8px)", height }}
-                position={{ x: 4, y: top }}
+                size={{ width: "calc(100% - 64px)", height }}
+                position={{ x: 56, y: top }}
                 bounds="parent"
                 dragAxis="y"
                 enableResizing={{ top: true, bottom: true, left: false, right: false }}
