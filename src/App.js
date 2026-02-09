@@ -641,7 +641,7 @@ function ThemeDropdown({ value, onChange }) {
 
 function SettingsPage({ settings, onChange, projects, onAddProject, onUpdateProject, onDeleteProject }) {
   return (
-    <div className="glass rounded-2xl p-6 max-w-xl space-y-6">
+    <div className="glass rounded-2xl p-6 w-full max-w-none space-y-6">
       <div>
         <div className="text-lg font-semibold mb-4">Einstellungen</div>
         <div className="space-y-4 text-sm">
