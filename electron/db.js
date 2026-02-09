@@ -53,8 +53,23 @@ function updateSettings(patch) {
   return getSettings();
 }
 
+function toIso(val) {
+  if (!val) return null;
+  if (typeof val === "string") return val;
+  try {
+    return new Date(val).toISOString();
+  } catch (e) {
+    return String(val);
+  }
+}
+
 function listEntries(from, to) {
-  return db.prepare("SELECT * FROM entries WHERE start >= ? AND start <= ? ORDER BY start ASC").all(from, to);
+  const f = toIso(from);
+  const t = toIso(to);
+  if (!f || !t) {
+    return db.prepare("SELECT * FROM entries ORDER BY start ASC").all();
+  }
+  return db.prepare("SELECT * FROM entries WHERE start >= ? AND start <= ? ORDER BY start ASC").all(f, t);
 }
 
 function createEntry(entry) {
