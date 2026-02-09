@@ -196,6 +196,20 @@ function App() {
       {page === "settings" ? (
         <SettingsPage
           settings={settings}
+          projects={projects}
+          onAddProject={async (name, color) => {
+            const p = await api.addProject(name, color);
+            setProjects(prev => [...prev, p]);
+          }}
+          onUpdateProject={async (id, patch) => {
+            const p = await api.updateProject(id, patch);
+            setProjects(prev => prev.map(x => x.id === id ? p : x));
+          }}
+          onDeleteProject={async (id) => {
+            await api.deleteProject(id);
+            setProjects(prev => prev.filter(x => x.id !== id));
+            setEntries(prev => prev.map(e => e.projectId === id ? { ...e, projectId: "default" } : e));
+          }}
           onChange={async (patch) => {
             const s = await api.updateSettings(patch);
             setSettings(s);
@@ -373,6 +387,17 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
         onMouseLeave={handleMouseUp}
       >
         <div style={{ height: totalHeight }} className="relative">
+          {Array.from({ length: 48 }).map((_, i) => {
+            const mins = i * 30;
+            const top = mins * minuteHeight;
+            const labelH = Math.floor(mins / 60).toString().padStart(2, "0");
+            const labelM = (mins % 60).toString().padStart(2, "0");
+            return (
+              <div key={`t-${i}`} className="absolute left-0 w-12 text-[10px] text-purple-200/60" style={{ top: top - 6 }}>
+                {labelH}:{labelM}
+              </div>
+            );
+          })}
           {Array.from({ length: 24 }).map((_, h) => (
             <div key={h} className="absolute left-0 right-0 border-t border-white/5" style={{ top: h * 60 * minuteHeight }}>
               <span className="absolute -left-2 -translate-x-full text-xs text-purple-200/40">{String(h).padStart(2, "0")}:00</span>
@@ -404,8 +429,8 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
             return (
               <Rnd
                 key={entry.id}
-                size={{ width: "92%", height }}
-                position={{ x: 40, y: top }}
+                size={{ width: "calc(100% - 56px)", height }}
+                position={{ x: 56, y: top }}
                 bounds="parent"
                 dragAxis="y"
                 enableResizing={{ top: true, bottom: true, left: false, right: false }}
@@ -521,31 +546,53 @@ function ProjectSummary({ date, entries, projects }) {
   );
 }
 
-function SettingsPage({ settings, onChange }) {
+function SettingsPage({ settings, onChange, projects, onAddProject, onUpdateProject, onDeleteProject }) {
   return (
-    <div className="glass rounded-2xl p-6 max-w-xl">
-      <div className="text-lg font-semibold mb-4">Einstellungen</div>
-      <div className="space-y-4 text-sm">
-        <label className="flex items-center justify-between gap-4">
-          <span>Min. Eintrag (Min)</span>
-          <input
-            className="bg-white/10 rounded px-2 py-1 w-24"
-            type="number"
-            value={settings.minEntryMinutes}
-            onChange={(e) => onChange({ minEntryMinutes: Number(e.target.value || 0) })}
-          />
-        </label>
-        <label className="flex items-center justify-between gap-4">
-          <span>Tagesziel (h)</span>
-          <input
-            className="bg-white/10 rounded px-2 py-1 w-24"
-            type="number"
-            value={settings.dailyGoalHours}
-            onChange={(e) => onChange({ dailyGoalHours: Number(e.target.value || 0) })}
-          />
-        </label>
-        <div className="text-xs text-purple-200/60">
-          Änderungen werden direkt gespeichert.
+    <div className="glass rounded-2xl p-6 max-w-xl space-y-6">
+      <div>
+        <div className="text-lg font-semibold mb-4">Einstellungen</div>
+        <div className="space-y-4 text-sm">
+          <label className="flex items-center justify-between gap-4">
+            <span>Min. Eintrag (Min)</span>
+            <input
+              className="bg-white/10 rounded px-2 py-1 w-24"
+              type="number"
+              value={settings.minEntryMinutes}
+              onChange={(e) => onChange({ minEntryMinutes: Number(e.target.value || 0) })}
+            />
+          </label>
+          <label className="flex items-center justify-between gap-4">
+            <span>Tagesziel (h)</span>
+            <input
+              className="bg-white/10 rounded px-2 py-1 w-24"
+              type="number"
+              value={settings.dailyGoalHours}
+              onChange={(e) => onChange({ dailyGoalHours: Number(e.target.value || 0) })}
+            />
+          </label>
+          <div className="text-xs text-purple-200/60">
+            Änderungen werden direkt gespeichert.
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="text-sm text-purple-200/70 mb-2">Projekte</div>
+        <div className="space-y-2">
+          {projects.map(p => (
+            <div key={p.id} className="flex items-center gap-2 text-sm">
+              <input type="color" value={p.color || "#8b4dff"} onChange={(e) => onUpdateProject(p.id, { color: e.target.value })} className="w-6 h-6 rounded" />
+              <input className="flex-1 bg-white/10 rounded px-2 py-1" value={p.name} onChange={(e) => onUpdateProject(p.id, { name: e.target.value })} />
+              {p.id !== "default" && (
+                <button className="text-xs text-red-300" onClick={() => onDeleteProject(p.id)}>del</button>
+              )}
+            </div>
+          ))}
+          <button className="text-xs text-purple-200/70 hover:text-white" onClick={() => {
+            const name = prompt("Projektname?");
+            if (!name) return;
+            onAddProject(name, "#8b4dff");
+          }}>+ Projekt hinzufügen</button>
         </div>
       </div>
     </div>
@@ -558,6 +605,13 @@ function CreateEntryModal({ entry, projects, onClose, onCreate }) {
   const end = new Date(draft.end);
   const durationMin = differenceInMinutes(end, start);
 
+  const setTime = (key, value) => {
+    const [h, m] = value.split(":").map(Number);
+    const d = new Date(draft[key]);
+    d.setHours(h || 0, m || 0, 0, 0);
+    setDraft({ ...draft, [key]: d.toISOString() });
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="glass rounded-2xl p-4 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
@@ -567,7 +621,17 @@ function CreateEntryModal({ entry, projects, onClose, onCreate }) {
         </div>
         <div className="space-y-3 text-sm">
           <div className="text-xs text-purple-200/70">
-            {format(start, "HH:mm")} – {format(end, "HH:mm")} · {formatDuration(durationMin)}
+            {formatDuration(durationMin)}
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="flex-1">
+              Start
+              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" value={format(start, "HH:mm")} onChange={(e) => setTime("start", e.target.value)} />
+            </label>
+            <label className="flex-1">
+              Ende
+              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" value={format(end, "HH:mm")} onChange={(e) => setTime("end", e.target.value)} />
+            </label>
           </div>
           <label className="block">
             Projekt
@@ -590,6 +654,17 @@ function CreateEntryModal({ entry, projects, onClose, onCreate }) {
 }
 
 function EntryEditor({ entry, projects, onClose, onSave, onDelete }) {
+  const start = new Date(entry.start);
+  const end = new Date(entry.end);
+  const durationMin = differenceInMinutes(end, start);
+
+  const setTime = (key, value) => {
+    const [h, m] = value.split(":").map(Number);
+    const d = new Date(entry[key]);
+    d.setHours(h || 0, m || 0, 0, 0);
+    onSave({ [key]: d.toISOString() });
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="glass rounded-2xl p-4 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
@@ -598,6 +673,19 @@ function EntryEditor({ entry, projects, onClose, onSave, onDelete }) {
           <button className="text-xs text-purple-200/70" onClick={onClose}>schließen</button>
         </div>
         <div className="space-y-3 text-sm">
+          <div className="text-xs text-purple-200/70">
+            {formatDuration(durationMin)}
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="flex-1">
+              Start
+              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" value={format(start, "HH:mm")} onChange={(e) => setTime("start", e.target.value)} />
+            </label>
+            <label className="flex-1">
+              Ende
+              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" value={format(end, "HH:mm")} onChange={(e) => setTime("end", e.target.value)} />
+            </label>
+          </div>
           <label className="block">
             Projekt
             <select className="mt-1 w-full bg-white/10 rounded px-2 py-1" value={entry.projectId} onChange={(e) => onSave({ projectId: e.target.value })}>
