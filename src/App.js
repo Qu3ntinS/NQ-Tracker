@@ -276,6 +276,7 @@ function App() {
         <EntryEditor
           entry={selectedEntry}
           projects={projects}
+          settings={settings}
           onClose={() => setSelectedEntry(null)}
           onSave={async (patch) => {
             const e = await api.updateEntry(selectedEntry.id, patch);
@@ -294,6 +295,7 @@ function App() {
         <CreateEntryModal
           entry={draftEntry}
           projects={projects}
+          settings={settings}
           onClose={() => setDraftEntry(null)}
           onCreate={async (entry) => {
             const ok = validateNoOverlap(entry, entries);
@@ -599,7 +601,7 @@ function SettingsPage({ settings, onChange, projects, onAddProject, onUpdateProj
   );
 }
 
-function CreateEntryModal({ entry, projects, onClose, onCreate }) {
+function CreateEntryModal({ entry, projects, settings, onClose, onCreate }) {
   const [draft, setDraft] = useState(entry);
   const start = new Date(draft.start);
   const end = new Date(draft.end);
@@ -626,11 +628,11 @@ function CreateEntryModal({ entry, projects, onClose, onCreate }) {
           <div className="flex items-center gap-2">
             <label className="flex-1">
               Start
-              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" step="900" value={format(start, "HH:mm")} onChange={(e) => setTime("start", e.target.value)} />
+              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" step={Math.max(60, settings.minEntryMinutes * 60)} value={format(start, "HH:mm")} onChange={(e) => setTime("start", e.target.value)} />
             </label>
             <label className="flex-1">
               Ende
-              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" step="900" value={format(end, "HH:mm")} onChange={(e) => setTime("end", e.target.value)} />
+              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" step={Math.max(60, settings.minEntryMinutes * 60)} value={format(end, "HH:mm")} onChange={(e) => setTime("end", e.target.value)} />
             </label>
           </div>
           <label className="block">
@@ -653,7 +655,7 @@ function CreateEntryModal({ entry, projects, onClose, onCreate }) {
   );
 }
 
-function EntryEditor({ entry, projects, onClose, onSave, onDelete }) {
+function EntryEditor({ entry, projects, settings, onClose, onSave, onDelete }) {
   const start = new Date(entry.start);
   const end = new Date(entry.end);
   const durationMin = differenceInMinutes(end, start);
@@ -679,11 +681,11 @@ function EntryEditor({ entry, projects, onClose, onSave, onDelete }) {
           <div className="flex items-center gap-2">
             <label className="flex-1">
               Start
-              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" step="900" value={format(start, "HH:mm")} onChange={(e) => setTime("start", e.target.value)} />
+              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" step={Math.max(60, settings.minEntryMinutes * 60)} value={format(start, "HH:mm")} onChange={(e) => setTime("start", e.target.value)} />
             </label>
             <label className="flex-1">
               Ende
-              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" step="900" value={format(end, "HH:mm")} onChange={(e) => setTime("end", e.target.value)} />
+              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" step={Math.max(60, settings.minEntryMinutes * 60)} value={format(end, "HH:mm")} onChange={(e) => setTime("end", e.target.value)} />
             </label>
           </div>
           <label className="block">
