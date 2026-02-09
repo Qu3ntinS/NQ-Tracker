@@ -472,6 +472,13 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
                   setTimeout(() => { justInteractedRef.current = false; }, 120);
                 }}
                 onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); if (justInteractedRef.current) return; onSelect(entry); }}
+                onMouseDown={(e) => {
+                  if (e.button === 1) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (entry.comment) navigator.clipboard?.writeText(entry.comment);
+                  }
+                }}
                 className="entry-card rounded-xl bg-gradient-to-br from-brand-600/70 to-brand-800/60 border border-white/20 shadow-glass text-white"
               >
                 <div className={classNames("p-2 text-xs", durationMin <= 15 && "py-1")}
