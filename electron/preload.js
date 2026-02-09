@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld("nqApi", {
   deleteEntry: (id) => ipcRenderer.invoke("db:deleteEntry", id),
   listProjects: () => ipcRenderer.invoke("db:listProjects"),
   addProject: (name, color) => ipcRenderer.invoke("db:addProject", name, color),
+  updateProject: (id, patch) => ipcRenderer.invoke("db:updateProject", id, patch),
+  deleteProject: (id) => ipcRenderer.invoke("db:deleteProject", id),
   getSettings: () => ipcRenderer.invoke("db:getSettings"),
   updateSettings: (patch) => ipcRenderer.invoke("db:updateSettings", patch),
   onUpdateStatus: (cb) => ipcRenderer.on("update:status", (_e, msg) => cb(msg)),

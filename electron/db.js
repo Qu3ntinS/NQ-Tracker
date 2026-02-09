@@ -108,6 +108,21 @@ function addProject(name, color) {
   return db.prepare("SELECT * FROM projects WHERE id=?").get(id);
 }
 
+function updateProject(id, patch) {
+  const existing = db.prepare("SELECT * FROM projects WHERE id=?").get(id);
+  if (!existing) return null;
+  const next = { ...existing, ...patch };
+  db.prepare("UPDATE projects SET name=?, color=? WHERE id=?")
+    .run(next.name, next.color, id);
+  return db.prepare("SELECT * FROM projects WHERE id=?").get(id);
+}
+
+function deleteProject(id) {
+  db.prepare("DELETE FROM projects WHERE id=?").run(id);
+  db.prepare("UPDATE entries SET projectId='default' WHERE projectId=?").run(id);
+  return true;
+}
+
 module.exports = {
   initDb,
   getSettings,
@@ -117,5 +132,7 @@ module.exports = {
   updateEntry,
   deleteEntry,
   listProjects,
-  addProject
+  addProject,
+  updateProject,
+  deleteProject
 };
