@@ -5,7 +5,7 @@ import classNames from "classnames";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Plus, Settings, Trash2 } from "lucide-react";
 
 const minuteHeight = 1.1; // px per minute
-const minEntryDefault = 15;
+const minEntryDefault = 20;
 const dailyGoalDefault = 8;
 
 const localStore = (() => {
@@ -95,7 +95,14 @@ function App() {
   useEffect(() => {
     (async () => {
       const s = await api.init?.();
-      if (s) setSettings(s);
+      if (s) {
+        if (s.minEntryMinutes < 20) {
+          const next = await api.updateSettings({ minEntryMinutes: 20 });
+          setSettings(next);
+        } else {
+          setSettings(s);
+        }
+      }
       const projs = await api.listProjects();
       setProjects(projs);
     })();
@@ -187,7 +194,7 @@ function App() {
         </div>
       </div>
       {updateStatus && (
-        <div className="mb-4 text-xs text-purple-200/80 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+        <div className="fixed bottom-6 right-6 z-50 text-xs text-purple-200/90 bg-black/70 border border-white/10 rounded-lg px-3 py-2 shadow-lg backdrop-blur">
           {updateStatus}
         </div>
       )}
@@ -439,7 +446,7 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
                   onUpdate(entry.id, { start: ns.toISOString(), end: ne.toISOString() });
                   setTimeout(() => { justInteractedRef.current = false; }, 120);
                 }}
-                onClick={(e) => { e.stopPropagation(); if (justInteractedRef.current) return; onSelect(entry); }}
+                onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); if (justInteractedRef.current) return; onSelect(entry); }}
                 className="entry-card rounded-xl bg-gradient-to-br from-brand-600/70 to-brand-800/60 border border-white/20 shadow-glass text-white"
               >
                 <div className={classNames("p-2 text-xs", durationMin <= 15 && "py-1")}

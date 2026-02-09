@@ -36,7 +36,7 @@ function initDb() {
 
   const settings = db.prepare("SELECT key, value FROM settings").all();
   if (!settings.length) {
-    db.prepare("INSERT INTO settings (key,value) VALUES (?,?)").run("minEntryMinutes", "15");
+    db.prepare("INSERT INTO settings (key,value) VALUES (?,?)").run("minEntryMinutes", "20");
     db.prepare("INSERT INTO settings (key,value) VALUES (?,?)").run("dailyGoalHours", "8");
   }
 }

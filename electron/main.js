@@ -42,7 +42,10 @@ function initAutoUpdate() {
   autoUpdater.on("update-not-available", () => sendUpdateStatus("Kein Update verfügbar"));
   autoUpdater.on("error", (err) => sendUpdateStatus(`Update Fehler: ${err?.message || err}`));
   autoUpdater.on("download-progress", (p) => sendUpdateStatus(`Update lädt… ${Math.round(p.percent)}%`));
-  autoUpdater.on("update-downloaded", () => sendUpdateStatus("Update bereit – App startet neu"));
+  autoUpdater.on("update-downloaded", () => {
+    sendUpdateStatus("Update bereit – App startet neu");
+    setTimeout(() => autoUpdater.quitAndInstall(), 800);
+  });
 
   autoUpdater.checkForUpdatesAndNotify().catch((e) => sendUpdateStatus(`Update Fehler: ${e?.message || e}`));
 }
