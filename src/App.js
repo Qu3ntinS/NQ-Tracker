@@ -5,7 +5,8 @@ import classNames from "classnames";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Plus, Settings, Trash2 } from "lucide-react";
 
 const minuteHeight = 1.1; // px per minute
-const minEntryDefault = 20;
+const minEntryDefault = 15;
+const minEntryPixelHeight = 22;
 const dailyGoalDefault = 8;
 
 const localStore = (() => {
@@ -95,14 +96,7 @@ function App() {
   useEffect(() => {
     (async () => {
       const s = await api.init?.();
-      if (s) {
-        if (s.minEntryMinutes < 20) {
-          const next = await api.updateSettings({ minEntryMinutes: 20 });
-          setSettings(next);
-        } else {
-          setSettings(s);
-        }
-      }
+      if (s) setSettings(s);
       const projs = await api.listProjects();
       setProjects(projs);
     })();
@@ -417,7 +411,7 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
             const end = new Date(entry.end);
             const top = (start.getHours() * 60 + start.getMinutes()) * minuteHeight;
             const durationMin = differenceInMinutes(end, start);
-            const height = Math.max(settings.minEntryMinutes * minuteHeight, durationMin * minuteHeight);
+            const height = Math.max(minEntryPixelHeight, durationMin * minuteHeight);
             return (
               <Rnd
                 key={entry.id}
@@ -427,6 +421,7 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
                 dragAxis="y"
                 enableResizing={{ top: true, bottom: true, left: false, right: false }}
                 grid={[1, settings.minEntryMinutes * minuteHeight]}
+                minHeight={minEntryPixelHeight}
                 onDragStart={() => { justInteractedRef.current = true; }}
                 onDragStop={(_, d) => {
                   const mins = Math.round(d.y / minuteHeight / settings.minEntryMinutes) * settings.minEntryMinutes;
