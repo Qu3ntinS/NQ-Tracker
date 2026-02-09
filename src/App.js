@@ -383,7 +383,7 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
       </div>
       <div
         ref={scrollerRef}
-        className="relative h-[720px] overflow-y-auto rounded-xl border border-white/10 bg-black/10"
+        className="relative h-[720px] overflow-y-auto overflow-x-hidden rounded-xl border border-white/10 bg-black/10"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
