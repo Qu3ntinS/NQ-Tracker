@@ -40,14 +40,18 @@ jobs:
           RELEASE_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          if [[ ! "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9._-]+)?$ ]]; then
-            echo "Invalid version: $RELEASE_VERSION" >&2
+          VERSION="$RELEASE_VERSION"
+          if [[ ! "$VERSION" =~ ^v ]]; then
+            VERSION="v$VERSION"
+          fi
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9._-]+)?$ ]]; then
+            echo "Invalid version: $VERSION" >&2
             exit 1
           fi
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git tag "$RELEASE_VERSION"
-          git push origin "$RELEASE_VERSION"
+          git tag "$VERSION"
+          git push origin "$VERSION"
 
       - name: Build & Release
         env:
