@@ -116,12 +116,16 @@ function App() {
       const width = Math.max(260, Math.min(520, window.innerWidth - e.clientX));
       setSidebarWidth(width);
     };
-    const onUp = () => setResizing(false);
+    const stop = () => setResizing(false);
     window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("mouseup", stop);
+    window.addEventListener("mouseleave", stop);
+    window.addEventListener("blur", stop);
     return () => {
       window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("mouseup", stop);
+      window.removeEventListener("mouseleave", stop);
+      window.removeEventListener("blur", stop);
     };
   }, [resizing]);
 
