@@ -380,7 +380,7 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
 
   const getMinutesFromEvent = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const y = e.clientY - rect.top + e.currentTarget.scrollTop;
+    const y = e.clientY - rect.top + e.currentTarget.scrollTop - topOffset;
     const raw = Math.round(y / minuteHeight / settings.minEntryMinutes) * settings.minEntryMinutes;
     return Math.max(0, Math.min(1440, raw));
   };
