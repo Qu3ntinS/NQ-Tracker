@@ -38,6 +38,8 @@ function initDb() {
   if (!settings.length) {
     db.prepare("INSERT INTO settings (key,value) VALUES (?,?)").run("minEntryMinutes", "15");
     db.prepare("INSERT INTO settings (key,value) VALUES (?,?)").run("dailyGoalHours", "8");
+    db.prepare("INSERT INTO settings (key,value) VALUES (?,?)").run("theme", "purple");
+    db.prepare("INSERT INTO settings (key,value) VALUES (?,?)").run("themeCustom", "#8b4dff");
   }
 }
 

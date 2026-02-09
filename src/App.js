@@ -86,7 +86,7 @@ function App() {
   const [date, setDate] = useState(new Date());
   const [entries, setEntries] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [settings, setSettings] = useState({ minEntryMinutes: minEntryDefault, dailyGoalHours: dailyGoalDefault });
+  const [settings, setSettings] = useState({ minEntryMinutes: minEntryDefault, dailyGoalHours: dailyGoalDefault, theme: "purple", themeCustom: "#8b4dff" });
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [updateStatus, setUpdateStatus] = useState("");
   const [sidebarWidth, setSidebarWidth] = useState(320);
@@ -101,6 +101,10 @@ function App() {
       setProjects(projs);
     })();
   }, []);
+
+  useEffect(() => {
+    applyTheme(settings.theme, settings.themeCustom);
+  }, [settings.theme, settings.themeCustom]);
 
   useEffect(() => {
     api.onUpdateStatus?.((msg) => {
@@ -583,6 +587,25 @@ function SettingsPage({ settings, onChange, projects, onAddProject, onUpdateProj
       </div>
 
       <div>
+        <div className="text-sm text-purple-200/70 mb-2">Theme</div>
+        <div className="space-y-2 text-sm">
+          <select className="w-full bg-white/10 rounded px-2 py-1" value={settings.theme} onChange={(e) => onChange({ theme: e.target.value })}>
+            <option value="purple">Purple</option>
+            <option value="blue">Blue</option>
+            <option value="green">Green</option>
+            <option value="mono">Mono</option>
+            <option value="custom">Custom</option>
+          </select>
+          {settings.theme === "custom" && (
+            <div className="flex items-center gap-2">
+              <input className="flex-1 bg-white/10 rounded px-2 py-1" value={settings.themeCustom || ""} onChange={(e) => onChange({ themeCustom: e.target.value })} placeholder="#8b4dff" />
+              <input type="color" value={settings.themeCustom || "#8b4dff"} onChange={(e) => onChange({ themeCustom: e.target.value })} className="w-10 h-8 rounded" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div>
         <div className="text-sm text-purple-200/70 mb-2">Projekte</div>
         <div className="space-y-2">
           {projects.map(p => (
@@ -712,6 +735,30 @@ function EntryEditor({ entry, projects, settings, onClose, onSave, onDelete }) {
   );
 }
 
+
+function applyTheme(theme, customHex) {
+  const themes = {
+    purple: "#8b4dff",
+    blue: "#3b82f6",
+    green: "#22c55e",
+    mono: "#c7c7c7",
+  };
+  const hex = theme === "custom" ? (customHex || "#8b4dff") : themes[theme] || themes.purple;
+  const rgb = hexToRgb(hex) || "139, 77, 255";
+  const root = document.documentElement;
+  root.style.setProperty("--accent", hex);
+  root.style.setProperty("--accent2", hex);
+  root.style.setProperty("--accent-rgb", rgb);
+}
+
+function hexToRgb(hex) {
+  const h = hex.replace("#", "");
+  if (h.length !== 6) return null;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `${r}, ${g}, ${b}`;
+}
 
 function formatDuration(mins) {
   if (mins >= 60) {
