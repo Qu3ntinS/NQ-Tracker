@@ -29,7 +29,31 @@ body {
 
 .glass {
   background: rgba(20, 18, 28, 0.6);
-  border: 1px solid rgba(var(--accent-rgb),0.25);
-  box-shadow: 0 10px 30px rgba(var(--accent-rgb),0.2);
+  border: 1px solid rgba(var(--accent-rgb),0.22);
+  box-shadow: 0 8px 20px rgba(var(--accent-rgb),0.14);
   backdrop-filter: blur(10px);
 }
+
+.shadow-glass {
+  box-shadow: 0 8px 22px rgba(var(--accent-rgb),0.18) !important;
+}
+
+.entry-card {
+  background: linear-gradient(135deg, rgba(var(--accent-rgb),0.7), rgba(var(--accent-rgb),0.45)) !important;
+}
+
+.bg-brand-600 { background-color: var(--accent) !important; }
+.bg-brand-500 { background-color: var(--accent) !important; }
+.bg-brand-400 { background-color: rgba(var(--accent-rgb),0.7) !important; }
+.bg-brand-600\/30 { background-color: rgba(var(--accent-rgb),0.3) !important; }
+.bg-brand-600\/70 { background-color: rgba(var(--accent-rgb),0.7) !important; }
+.bg-brand-400\/20 { background-color: rgba(var(--accent-rgb),0.2) !important; }
+.border-brand-300\/40 { border-color: rgba(var(--accent-rgb),0.4) !important; }
+
+.text-brand-100,
+.text-brand-200,
+.text-brand-300,
+.text-brand-400 { color: rgba(var(--accent-rgb),0.9) !important; }
+
+.from-brand-600\/70 { --tw-gradient-from: rgba(var(--accent-rgb),0.7) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(var(--accent-rgb),0)); }
+.to-brand-800\/60 { --tw-gradient-to: rgba(var(--accent-rgb),0.45) !important; }
