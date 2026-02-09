@@ -24,6 +24,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set tag (manual trigger)
+        continue-on-error: true
         env:
           RELEASE_VERSION: ${{ inputs.version }}
         run: |
@@ -48,6 +49,8 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      RELEASE_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
 
     steps:
       - name: Checkout
@@ -63,7 +66,24 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Build & Release
+      - name: Build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run electron:build
+
+      - name: Publish release
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION="$RELEASE_VERSION"
+          if [[ ! "$VERSION" =~ ^v ]]; then
+            VERSION="v$VERSION"
+          fi
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9._-]+)?$ ]]; then
+            echo "Invalid version: $VERSION" >&2
+            exit 1
+          fi
+          gh release view "$VERSION" >/dev/null 2>&1 || gh release create "$VERSION" -t "$VERSION" -n ""
+          gh release upload "$VERSION" dist/**/* --clobber
