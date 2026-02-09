@@ -227,7 +227,6 @@ function App() {
           <button className={btnCls(page === "settings")} onClick={() => setPage("settings")}>
             <Settings size={16} className="mr-1" /> Settings
           </button>
-          <button className={btnCls()} onClick={() => api.requestUpdateCheck?.()}>Updates prüfen</button>
         </div>
       </div>
       {updateStatus && (
@@ -678,6 +677,13 @@ function SettingsPage({ settings, onChange, projects, onAddProject, onUpdateProj
             <input type="color" value={settings.themeCustom || "#8b4dff"} onChange={(e) => onChange({ themeCustom: e.target.value })} className="w-10 h-8 rounded" />
           </div>
         )}
+      </div>
+
+      <div>
+        <div className="text-sm text-purple-200/70 mb-2">Updates</div>
+        <button className="bg-white/10 rounded px-3 py-2 text-sm" onClick={() => window.nqApi?.requestUpdateCheck?.()}>
+          Updates prüfen
+        </button>
       </div>
 
       <div>
