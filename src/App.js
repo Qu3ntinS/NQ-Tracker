@@ -596,7 +596,7 @@ function SettingsPage({ settings, onChange, projects, onAddProject, onUpdateProj
       <div>
         <div className="text-sm text-purple-200/70 mb-2">Theme</div>
         <div className="space-y-2 text-sm">
-          <select className="w-full bg-white/10 rounded px-2 py-1 appearance-none pr-8" value={settings.theme} onChange={(e) => onChange({ theme: e.target.value })}>
+          <select className="w-full select-theme rounded px-2 py-1 appearance-none pr-8" value={settings.theme} onChange={(e) => onChange({ theme: e.target.value })}>
             <option value="purple">Purple</option>
             <option value="blue">Blue</option>
             <option value="green">Green</option>
