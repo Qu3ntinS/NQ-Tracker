@@ -324,7 +324,8 @@ function App() {
 
 function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate, onSelect }) {
   const dayEntries = entries.filter(e => isSameDay(new Date(e.start), date));
-  const totalHeight = 1440 * minuteHeight;
+  const topOffset = 12;
+  const totalHeight = 1440 * minuteHeight + topOffset;
   const scrollerRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState(null);
@@ -379,7 +380,7 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
 
   const now = new Date();
   const isToday = isSameDay(now, date);
-  const nowLineTop = (now.getHours() * 60 + now.getMinutes()) * minuteHeight;
+  const nowLineTop = (now.getHours() * 60 + now.getMinutes()) * minuteHeight + topOffset;
   const previewStart = dragStart !== null && dragCurrent !== null ? Math.min(dragStart, dragCurrent) : null;
   const previewEnd = dragStart !== null && dragCurrent !== null ? Math.max(dragStart, dragCurrent) : null;
   const previewHeightMinutes = previewStart === null || previewEnd === null
@@ -407,13 +408,13 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
             const labelH = Math.floor(mins / 60).toString().padStart(2, "0");
             const labelM = (mins % 60).toString().padStart(2, "0");
             return (
-              <div key={`t-${i}`} className="absolute left-0 w-12 text-[10px] text-purple-200/60 pointer-events-none" style={{ top: top - 6 }}>
+              <div key={`t-${i}`} className="absolute left-0 w-12 text-[10px] text-purple-200/60 pointer-events-none" style={{ top: top + topOffset - 6 }}>
                 {labelH}:{labelM}
               </div>
             );
           })}
           {Array.from({ length: 24 }).map((_, h) => (
-            <div key={h} className="absolute left-0 right-0 border-t border-white/5" style={{ top: h * 60 * minuteHeight }}>
+            <div key={h} className="absolute left-0 right-0 border-t border-white/5" style={{ top: h * 60 * minuteHeight + topOffset }}>
               <span className="absolute -left-2 -translate-x-full text-xs text-purple-200/40">{String(h).padStart(2, "0")}:00</span>
             </div>
           ))}
@@ -428,17 +429,17 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
           {dragging && previewStart !== null && (
             <div
               className="absolute left-14 right-2 rounded-xl bg-brand-400/20 border border-brand-300/40"
-              style={{ top: previewStart * minuteHeight, height: previewHeightMinutes * minuteHeight }}
+              style={{ top: previewStart * minuteHeight + topOffset, height: previewHeightMinutes * minuteHeight }}
             >
               <div className="p-2 text-[10px] text-brand-100">Neuer Eintrag</div>
             </div>
           )}
 
-          <div className="absolute top-0" style={{ left: 56, width: "calc(100% - 64px)", height: totalHeight }}>
+          <div className="absolute top-0" style={{ left: 56, width: "calc(100% - 64px)", height: totalHeight, paddingTop: topOffset }}>
           {dayEntries.map((entry) => {
             const start = new Date(entry.start);
             const end = new Date(entry.end);
-            const top = (start.getHours() * 60 + start.getMinutes()) * minuteHeight;
+            const top = (start.getHours() * 60 + start.getMinutes()) * minuteHeight + topOffset;
             const durationMin = differenceInMinutes(end, start);
             const height = Math.max(minEntryPixelHeight, durationMin * minuteHeight);
             return (
