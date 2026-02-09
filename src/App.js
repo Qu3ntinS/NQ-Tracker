@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { format, startOfWeek, addDays, isSameDay, startOfDay, endOfDay, differenceInMinutes } from "date-fns";
 import { Rnd } from "react-rnd";
 import classNames from "classnames";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Plus, Settings, Trash2 } from "lucide-react";
 
 const minuteHeight = 1.1; // px per minute
 const minEntryDefault = 15;
@@ -80,6 +80,7 @@ const localStore = (() => {
 const api = window.nqApi || localStore;
 
 function App() {
+  const [page, setPage] = useState("tracker");
   const [view, setView] = useState("day");
   const [date, setDate] = useState(new Date());
   const [entries, setEntries] = useState([]);
@@ -124,7 +125,7 @@ function App() {
 
   return (
     <div className="min-h-screen p-6">
-      <div className="glass rounded-2xl p-4 mb-4 flex items-center justify-between">
+      <div className="glass rounded-2xl p-4 mb-4 flex flex-wrap items-center gap-3 justify-between">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-brand-600/30">
             <Clock3 size={18} className="text-brand-200" />
@@ -134,114 +135,120 @@ function App() {
             <div className="text-2xl font-semibold">Timetable</div>
           </div>
         </div>
+        {page === "tracker" ? (
+          <>
+            <div className="flex items-center gap-2">
+              <button className={btnCls()} onClick={goPrev}><ChevronLeft size={16} /></button>
+              <button className={btnCls()} onClick={goToday}><CalendarDays size={16} className="mr-1" /> Heute</button>
+              <button className={btnCls()} onClick={goNext}><ChevronRight size={16} /></button>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className={btnCls(view==="day")} onClick={() => setView("day")}>Day</button>
+              <button className={btnCls(view==="week")} onClick={() => setView("week")}>Week</button>
+            </div>
+            <div className="text-sm text-purple-200/80">{format(date, "PPP")}</div>
+          </>
+        ) : (
+          <div className="text-sm text-purple-200/80">Einstellungen</div>
+        )}
         <div className="flex items-center gap-2">
-          <button className={btnCls()} onClick={goPrev}><ChevronLeft size={16} /></button>
-          <button className={btnCls()} onClick={goToday}><CalendarDays size={16} className="mr-1" /> Heute</button>
-          <button className={btnCls()} onClick={goNext}><ChevronRight size={16} /></button>
+          <button className={btnCls(page === "tracker")} onClick={() => setPage("tracker")}>Tracker</button>
+          <button className={btnCls(page === "settings")} onClick={() => setPage("settings")}>
+            <Settings size={16} className="mr-1" /> Settings
+          </button>
         </div>
-        <div className="flex items-center gap-2">
-          <button className={btnCls(view==="day")} onClick={() => setView("day")}>Day</button>
-          <button className={btnCls(view==="week")} onClick={() => setView("week")}>Week</button>
-        </div>
-        <div className="text-sm text-purple-200/80">{format(date, "PPP")}</div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-        <div className="glass rounded-2xl p-4">
-          {view === "day" ? (
-            <DayView
-              date={date}
-              entries={entries}
-              settings={settings}
+      {page === "settings" ? (
+        <SettingsPage
+          settings={settings}
+          onChange={async (patch) => {
+            const s = await api.updateSettings(patch);
+            setSettings(s);
+          }}
+        />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
+          <div className="glass rounded-2xl p-4">
+            {view === "day" ? (
+              <DayView
+                date={date}
+                entries={entries}
+                settings={settings}
+                projects={projects}
+                onCreate={async (entry) => {
+                  const ok = validateNoOverlap(entry, entries);
+                  if (!ok) return;
+                  const e = await api.createEntry(entry);
+                  setEntries(prev => [...prev, e]);
+                }}
+                onUpdate={async (id, patch) => {
+                  const next = entries.map(e => e.id === id ? { ...e, ...patch } : e).find(e => e.id === id);
+                  if (next && !validateNoOverlap(next, entries.filter(e => e.id !== id))) return;
+                  const e = await api.updateEntry(id, patch);
+                  setEntries(prev => prev.map(x => x.id === id ? e : x));
+                }}
+                onSelect={setSelectedEntry}
+              />
+            ) : (
+              <WeekView
+                date={date}
+                entries={entries}
+                settings={settings}
+                onSelectDay={(d) => { setDate(d); setView("day"); }}
+              />
+            )}
+          </div>
+
+          <div className="glass rounded-2xl p-4 space-y-4">
+            <div>
+              <div className="text-sm text-purple-200/70">Tagesziel</div>
+              <div className={classNames("text-3xl font-semibold", goalReached ? "text-green-400" : "text-white")}>
+                {Math.floor(totalMinutesDay/60)}h {totalMinutesDay%60}m
+              </div>
+              <div className="text-xs text-purple-200/60">Ziel: {settings.dailyGoalHours}h</div>
+              <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
+                <div className={classNames("h-2", goalReached ? "bg-green-400" : "bg-brand-500")} style={{ width: `${Math.min(100, (totalMinutesDay/(settings.dailyGoalHours*60))*100)}%` }} />
+              </div>
+            </div>
+
+            <ProjectManager
               projects={projects}
-              onCreate={async (entry) => {
-                const ok = validateNoOverlap(entry, entries);
-                if (!ok) return;
-                const e = await api.createEntry(entry);
-                setEntries(prev => [...prev, e]);
+              onAdd={async (name, color) => {
+                const p = await api.addProject(name, color);
+                setProjects(prev => [...prev, p]);
               }}
               onUpdate={async (id, patch) => {
-                const next = entries.map(e => e.id === id ? { ...e, ...patch } : e).find(e => e.id === id);
-                if (next && !validateNoOverlap(next, entries.filter(e => e.id !== id))) return;
-                const e = await api.updateEntry(id, patch);
-                setEntries(prev => prev.map(x => x.id === id ? e : x));
+                const p = await api.updateProject(id, patch);
+                setProjects(prev => prev.map(x => x.id === id ? p : x));
               }}
-              onSelect={setSelectedEntry}
+              onDelete={async (id) => {
+                await api.deleteProject(id);
+                setProjects(prev => prev.filter(x => x.id !== id));
+                setEntries(prev => prev.map(e => e.projectId === id ? { ...e, projectId: "default" } : e));
+              }}
             />
-          ) : (
-            <WeekView
-              date={date}
-              entries={entries}
-              settings={settings}
-              onSelectDay={(d) => { setDate(d); setView("day"); }}
-            />
-          )}
-        </div>
-
-        <div className="glass rounded-2xl p-4 space-y-4">
-          <div>
-            <div className="text-sm text-purple-200/70">Tagesziel</div>
-            <div className={classNames("text-3xl font-semibold", goalReached ? "text-green-400" : "text-white")}>
-              {Math.floor(totalMinutesDay/60)}h {totalMinutesDay%60}m
-            </div>
-            <div className="text-xs text-purple-200/60">Ziel: {settings.dailyGoalHours}h</div>
-            <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
-              <div className={classNames("h-2", goalReached ? "bg-green-400" : "bg-brand-500")} style={{ width: `${Math.min(100, (totalMinutesDay/(settings.dailyGoalHours*60))*100)}%` }} />
-            </div>
           </div>
-
-          <ProjectManager
-            projects={projects}
-            onAdd={async (name, color) => {
-              const p = await api.addProject(name, color);
-              setProjects(prev => [...prev, p]);
-            }}
-            onUpdate={async (id, patch) => {
-              const p = await api.updateProject(id, patch);
-              setProjects(prev => prev.map(x => x.id === id ? p : x));
-            }}
-            onDelete={async (id) => {
-              await api.deleteProject(id);
-              setProjects(prev => prev.filter(x => x.id !== id));
-              setEntries(prev => prev.map(e => e.projectId === id ? { ...e, projectId: "default" } : e));
-            }}
-          />
-
-          <div>
-            <div className="text-sm text-purple-200/70 mb-2">Einstellungen</div>
-            <div className="space-y-2 text-sm">
-              <label className="flex items-center justify-between">
-                <span>Min. Eintrag (Min)</span>
-                <input className="bg-white/10 rounded px-2 py-1 w-20" type="number" value={settings.minEntryMinutes} onChange={async (e) => {
-                  const v = Number(e.target.value || 0);
-                  const s = await api.updateSettings({ minEntryMinutes: v });
-                  setSettings(s);
-                }} />
-              </label>
-              <label className="flex items-center justify-between">
-                <span>Tagesziel (h)</span>
-                <input className="bg-white/10 rounded px-2 py-1 w-20" type="number" value={settings.dailyGoalHours} onChange={async (e) => {
-                  const v = Number(e.target.value || 0);
-                  const s = await api.updateSettings({ dailyGoalHours: v });
-                  setSettings(s);
-                }} />
-              </label>
-            </div>
-          </div>
-
-          {selectedEntry && (
-            <EntryEditor entry={selectedEntry} projects={projects} onClose={() => setSelectedEntry(null)} onSave={async (patch) => {
-              const e = await api.updateEntry(selectedEntry.id, patch);
-              setEntries(prev => prev.map(x => x.id === e.id ? e : x));
-              setSelectedEntry(e);
-            }} onDelete={async () => {
-              await api.deleteEntry(selectedEntry.id);
-              setEntries(prev => prev.filter(x => x.id !== selectedEntry.id));
-              setSelectedEntry(null);
-            }} />
-          )}
         </div>
-      </div>
+      )}
+
+      {selectedEntry && (
+        <EntryEditor
+          entry={selectedEntry}
+          projects={projects}
+          onClose={() => setSelectedEntry(null)}
+          onSave={async (patch) => {
+            const e = await api.updateEntry(selectedEntry.id, patch);
+            setEntries(prev => prev.map(x => x.id === e.id ? e : x));
+            setSelectedEntry(e);
+          }}
+          onDelete={async () => {
+            await api.deleteEntry(selectedEntry.id);
+            setEntries(prev => prev.filter(x => x.id !== selectedEntry.id));
+            setSelectedEntry(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -250,6 +257,9 @@ function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSele
   const dayEntries = entries.filter(e => isSameDay(new Date(e.start), date));
   const totalHeight = 1440 * minuteHeight;
   const scrollerRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(null);
+  const [dragCurrent, setDragCurrent] = useState(null);
 
   useEffect(() => {
     const now = new Date();
@@ -259,28 +269,67 @@ function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSele
     if (scrollerRef.current) scrollerRef.current.scrollTop = Math.max(0, y);
   }, [date]);
 
-  const handleCreate = async (e) => {
+  const getMinutesFromEvent = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const y = e.clientY - rect.top + e.currentTarget.scrollTop;
-    const minutes = Math.floor(y / minuteHeight / settings.minEntryMinutes) * settings.minEntryMinutes;
+    const raw = Math.round(y / minuteHeight / settings.minEntryMinutes) * settings.minEntryMinutes;
+    return Math.max(0, Math.min(1440, raw));
+  };
+
+  const handleMouseDown = (e) => {
+    if (e.button !== 0) return;
+    if (e.target.closest('.entry-card')) return;
+    const minutes = getMinutesFromEvent(e);
+    setDragging(true);
+    setDragStart(minutes);
+    setDragCurrent(minutes);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!dragging) return;
+    setDragCurrent(getMinutesFromEvent(e));
+  };
+
+  const handleMouseUp = async () => {
+    if (!dragging) return;
+    setDragging(false);
+    if (dragStart === null || dragCurrent === null) return;
+    const startMin = Math.min(dragStart, dragCurrent);
+    let endMin = Math.max(dragStart, dragCurrent);
+    if (endMin <= startMin) endMin = startMin + settings.minEntryMinutes;
+    endMin = Math.min(1440, endMin);
     const start = new Date(date);
-    start.setHours(0, minutes, 0, 0);
-    const end = new Date(start);
-    end.setMinutes(end.getMinutes() + settings.minEntryMinutes);
+    start.setHours(0, startMin, 0, 0);
+    const end = new Date(date);
+    end.setHours(0, endMin, 0, 0);
     await onCreate({ start: start.toISOString(), end: end.toISOString(), projectId: projects[0]?.id || "default", comment: "" });
+    setDragStart(null);
+    setDragCurrent(null);
   };
 
   const now = new Date();
   const isToday = isSameDay(now, date);
   const nowLineTop = (now.getHours() * 60 + now.getMinutes()) * minuteHeight;
+  const previewStart = dragStart !== null && dragCurrent !== null ? Math.min(dragStart, dragCurrent) : null;
+  const previewEnd = dragStart !== null && dragCurrent !== null ? Math.max(dragStart, dragCurrent) : null;
+  const previewHeightMinutes = previewStart === null || previewEnd === null
+    ? 0
+    : Math.max(settings.minEntryMinutes, previewEnd - previewStart || settings.minEntryMinutes);
 
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
         <div className="text-sm text-purple-200/70">Tagesansicht</div>
-        <div className="text-xs text-purple-200/60">Klicken = Eintrag</div>
+        <div className="text-xs text-purple-200/60">Klicken + Ziehen = Eintrag</div>
       </div>
-      <div ref={scrollerRef} className="relative h-[720px] overflow-y-auto rounded-xl border border-white/10 bg-black/10" onClick={handleCreate}>
+      <div
+        ref={scrollerRef}
+        className="relative h-[720px] overflow-y-auto rounded-xl border border-white/10 bg-black/10"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
         <div style={{ height: totalHeight }} className="relative">
           {Array.from({ length: 24 }).map((_, h) => (
             <div key={h} className="absolute left-0 right-0 border-t border-white/5" style={{ top: h * 60 * minuteHeight }}>
@@ -292,6 +341,15 @@ function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSele
             <div className="absolute left-10 right-2" style={{ top: nowLineTop }}>
               <div className="h-[1px] bg-brand-400" />
               <div className="text-[10px] text-brand-300">{format(now, "HH:mm")}</div>
+            </div>
+          )}
+
+          {dragging && previewStart !== null && (
+            <div
+              className="absolute left-10 right-2 rounded-xl bg-brand-400/20 border border-brand-300/40"
+              style={{ top: previewStart * minuteHeight, height: previewHeightMinutes * minuteHeight }}
+            >
+              <div className="p-2 text-[10px] text-brand-100">Neuer Eintrag</div>
             </div>
           )}
 
@@ -326,7 +384,7 @@ function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSele
                   onUpdate(entry.id, { start: ns.toISOString(), end: ne.toISOString() });
                 }}
                 onClick={(e) => { e.stopPropagation(); onSelect(entry); }}
-                className="rounded-xl bg-gradient-to-br from-brand-600/70 to-brand-800/60 border border-white/20 shadow-glass text-white"
+                className="entry-card rounded-xl bg-gradient-to-br from-brand-600/70 to-brand-800/60 border border-white/20 shadow-glass text-white"
               >
                 <div className="p-2 text-xs">
                   <div className="font-medium">{projects.find(p => p.id === entry.projectId)?.name || "Projekt"}</div>
@@ -372,26 +430,60 @@ function WeekView({ date, entries, settings, onSelectDay }) {
   );
 }
 
+function SettingsPage({ settings, onChange }) {
+  return (
+    <div className="glass rounded-2xl p-6 max-w-xl">
+      <div className="text-lg font-semibold mb-4">Einstellungen</div>
+      <div className="space-y-4 text-sm">
+        <label className="flex items-center justify-between gap-4">
+          <span>Min. Eintrag (Min)</span>
+          <input
+            className="bg-white/10 rounded px-2 py-1 w-24"
+            type="number"
+            value={settings.minEntryMinutes}
+            onChange={(e) => onChange({ minEntryMinutes: Number(e.target.value || 0) })}
+          />
+        </label>
+        <label className="flex items-center justify-between gap-4">
+          <span>Tagesziel (h)</span>
+          <input
+            className="bg-white/10 rounded px-2 py-1 w-24"
+            type="number"
+            value={settings.dailyGoalHours}
+            onChange={(e) => onChange({ dailyGoalHours: Number(e.target.value || 0) })}
+          />
+        </label>
+        <div className="text-xs text-purple-200/60">
+          Änderungen werden direkt gespeichert.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EntryEditor({ entry, projects, onClose, onSave, onDelete }) {
   return (
-    <div className="rounded-xl p-3 border border-white/10 bg-white/5">
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-sm font-semibold">Eintrag bearbeiten</div>
-        <button className="text-xs text-purple-200/70" onClick={onClose}>schließen</button>
-      </div>
-      <div className="space-y-2 text-sm">
-        <label className="block">
-          Projekt
-          <select className="mt-1 w-full bg-white/10 rounded px-2 py-1" value={entry.projectId} onChange={(e) => onSave({ projectId: e.target.value })}>
-            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </label>
-        <label className="block">
-          Kommentar
-          <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" value={entry.comment || ""} onChange={(e) => onSave({ comment: e.target.value })} />
-        </label>
-        <div className="flex gap-2">
-          <button className="bg-brand-600 px-3 py-1 rounded text-xs" onClick={onDelete}>löschen</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="glass rounded-2xl p-4 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-sm font-semibold">Eintrag bearbeiten</div>
+          <button className="text-xs text-purple-200/70" onClick={onClose}>schließen</button>
+        </div>
+        <div className="space-y-3 text-sm">
+          <label className="block">
+            Projekt
+            <select className="mt-1 w-full bg-white/10 rounded px-2 py-1" value={entry.projectId} onChange={(e) => onSave({ projectId: e.target.value })}>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            Kommentar
+            <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" value={entry.comment || ""} onChange={(e) => onSave({ comment: e.target.value })} />
+          </label>
+          <div className="flex items-center justify-between">
+            <button className="bg-brand-600 px-3 py-1 rounded text-xs" onClick={onDelete}>löschen</button>
+            <button className="text-xs text-purple-200/70" onClick={onClose}>fertig</button>
+          </div>
         </div>
       </div>
     </div>
