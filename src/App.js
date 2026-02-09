@@ -235,11 +235,15 @@ function App() {
                 onCreateRequest={(entry) => {
                   setDraftEntry(entry);
                 }}
-                onUpdate={async (id, patch) => {
+                onUpdate={(id, patch) => {
                   const next = entries.map(e => e.id === id ? { ...e, ...patch } : e).find(e => e.id === id);
                   if (next && !validateNoOverlap(next, entries.filter(e => e.id !== id))) return;
-                  const e = await api.updateEntry(id, patch);
-                  setEntries(prev => prev.map(x => x.id === id ? e : x));
+                  // optimistic update to avoid snap-back
+                  setEntries(prev => prev.map(x => x.id === id ? { ...x, ...patch } : x));
+                  api.updateEntry(id, patch).then((e) => {
+                    if (!e) return;
+                    setEntries(prev => prev.map(x => x.id === id ? e : x));
+                  });
                 }}
                 onSelect={setSelectedEntry}
               />
@@ -476,10 +480,10 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
                     <div className={classNames("font-medium truncate", durationMin <= 15 && "text-[11px]")}>{projects.find(p => p.id === entry.projectId)?.name || "Projekt"}</div>
                     <div className={classNames("text-[10px] text-white/80", durationMin <= 15 && "text-[10px]")}>{formatDuration(durationMin)}</div>
                   </div>
-                  {durationMin > 15 ? (
+                  {durationMin >= 60 ? (
                     <div className="opacity-80 truncate">{format(start, "HH:mm")} – {format(end, "HH:mm")}</div>
                   ) : null}
-                  {durationMin > 15 && entry.comment && <div className="opacity-70 truncate">{entry.comment}</div>}
+                  {durationMin >= 60 && entry.comment && <div className="opacity-70 truncate">{entry.comment}</div>}
                 </div>
               </Rnd>
             );
