@@ -430,7 +430,7 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
             </div>
           )}
 
-          <div className="absolute left-14 right-2 top-0">
+          <div className="absolute top-0" style={{ left: 56, width: "calc(100% - 64px)", height: totalHeight }}>
           {dayEntries.map((entry) => {
             const start = new Date(entry.start);
             const end = new Date(entry.end);
@@ -657,11 +657,11 @@ function CreateEntryModal({ entry, projects, settings, onClose, onCreate }) {
           <div className="flex items-center gap-2">
             <label className="flex-1">
               Start
-              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" step={Math.max(60, settings.minEntryMinutes * 60)} value={format(start, "HH:mm")} onChange={(e) => setTime("start", e.target.value)} />
+              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" lang="de-DE" step={Math.max(60, settings.minEntryMinutes * 60)} value={format(start, "HH:mm")} onChange={(e) => setTime("start", e.target.value)} />
             </label>
             <label className="flex-1">
               Ende
-              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" step={Math.max(60, settings.minEntryMinutes * 60)} value={format(end, "HH:mm")} onChange={(e) => setTime("end", e.target.value)} />
+              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" lang="de-DE" step={Math.max(60, settings.minEntryMinutes * 60)} value={format(end, "HH:mm")} onChange={(e) => setTime("end", e.target.value)} />
             </label>
           </div>
           <label className="block">
@@ -710,11 +710,11 @@ function EntryEditor({ entry, projects, settings, onClose, onSave, onDelete }) {
           <div className="flex items-center gap-2">
             <label className="flex-1">
               Start
-              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" step={Math.max(60, settings.minEntryMinutes * 60)} value={format(start, "HH:mm")} onChange={(e) => setTime("start", e.target.value)} />
+              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" lang="de-DE" step={Math.max(60, settings.minEntryMinutes * 60)} value={format(start, "HH:mm")} onChange={(e) => setTime("start", e.target.value)} />
             </label>
             <label className="flex-1">
               Ende
-              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" step={Math.max(60, settings.minEntryMinutes * 60)} value={format(end, "HH:mm")} onChange={(e) => setTime("end", e.target.value)} />
+              <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" type="time" lang="de-DE" step={Math.max(60, settings.minEntryMinutes * 60)} value={format(end, "HH:mm")} onChange={(e) => setTime("end", e.target.value)} />
             </label>
           </div>
           <label className="block">
