@@ -17,12 +17,19 @@ function createWindow() {
     width: 1300,
     height: 900,
     backgroundColor: "#0b0b10",
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false
     }
   });
+
+  try {
+    const { Menu } = require("electron");
+    Menu.setApplicationMenu(null);
+    win.setMenuBarVisibility(false);
+  } catch (e) {}
 
   mainWindow = win;
 
