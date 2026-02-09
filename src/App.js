@@ -87,6 +87,7 @@ function App() {
   const [projects, setProjects] = useState([]);
   const [settings, setSettings] = useState({ minEntryMinutes: minEntryDefault, dailyGoalHours: dailyGoalDefault });
   const [selectedEntry, setSelectedEntry] = useState(null);
+  const [updateStatus, setUpdateStatus] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -95,6 +96,14 @@ function App() {
       const projs = await api.listProjects();
       setProjects(projs);
     })();
+  }, []);
+
+  useEffect(() => {
+    api.onUpdateStatus?.((msg) => {
+      setUpdateStatus(msg);
+      if (!msg) return;
+      setTimeout(() => setUpdateStatus("") , 4000);
+    });
   }, []);
 
   const loadEntries = async (rangeStart, rangeEnd) => {
@@ -125,7 +134,7 @@ function App() {
 
   return (
     <div className="min-h-screen p-6">
-      <div className="glass rounded-2xl p-4 mb-4 flex flex-wrap items-center gap-3 justify-between">
+      <div className="glass rounded-2xl p-4 mb-2 flex flex-wrap items-center gap-3 justify-between">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-brand-600/30">
             <Clock3 size={18} className="text-brand-200" />
@@ -158,6 +167,11 @@ function App() {
           </button>
         </div>
       </div>
+      {updateStatus && (
+        <div className="mb-4 text-xs text-purple-200/80 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+          {updateStatus}
+        </div>
+      )}
 
       {page === "settings" ? (
         <SettingsPage
