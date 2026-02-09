@@ -93,6 +93,8 @@ function App() {
   const [resizing, setResizing] = useState(false);
   const [draftEntry, setDraftEntry] = useState(null);
   const [appVersion, setAppVersion] = useState("?");
+  const [showDatePick, setShowDatePick] = useState(false);
+  const [datePickValue, setDatePickValue] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -191,10 +193,21 @@ function App() {
         </div>
         {page === "tracker" ? (
           <>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 relative">
               <button className={btnCls()} onClick={goPrev}><ChevronLeft size={16} /></button>
-              <button className={btnCls()} onClick={goToday}><CalendarDays size={16} className="mr-1" /> Heute</button>
+              <button className={btnCls()} onClick={goToday} onContextMenu={(e) => { e.preventDefault(); setShowDatePick(v => !v); setDatePickValue(format(date, "yyyy-MM-dd")); }}>
+                <CalendarDays size={16} className="mr-1" /> Heute
+              </button>
               <button className={btnCls()} onClick={goNext}><ChevronRight size={16} /></button>
+              {showDatePick && (
+                <div className="absolute top-full mt-2 left-0 bg-black/80 border border-white/10 rounded-lg p-2 z-50">
+                  <input type="date" className="bg-white/10 rounded px-2 py-1" value={datePickValue} onChange={(e) => {
+                    setDatePickValue(e.target.value);
+                    if (e.target.value) setDate(new Date(e.target.value));
+                    setShowDatePick(false);
+                  }} />
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button className={btnCls(view==="day")} onClick={() => setView("day")}>Day</button>
