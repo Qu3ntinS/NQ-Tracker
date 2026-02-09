@@ -510,7 +510,7 @@ function WeekView({ date, entries, settings, onSelectDay }) {
     .reduce((sum, e) => sum + differenceInMinutes(new Date(e.end), new Date(e.start)), 0);
 
   return (
-    <div>
+    <div className="h-[calc(100vh-260px)] min-h-[520px] overflow-y-auto">
       <div className="text-sm text-purple-200/70 mb-2">Wochenansicht</div>
       <div className="grid grid-cols-7 gap-2">
         {days.map(d => {
