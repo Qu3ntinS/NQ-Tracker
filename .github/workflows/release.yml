@@ -1,4 +1,4 @@
-name: Build & रिलीज
+name: Build & Release
 
 on:
   push:
