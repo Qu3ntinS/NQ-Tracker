@@ -9,7 +9,7 @@ const dailyGoalDefault = 8;
 
 const localStore = (() => {
   const key = "nq-tracker-db";
-  const load = () => JSON.parse(localStorage.getItem(key) || "{}" );
+  const load = () => JSON.parse(localStorage.getItem(key) || "{}");
   const save = (db) => localStorage.setItem(key, JSON.stringify(db));
   return {
     async init() {
@@ -46,12 +46,25 @@ const localStore = (() => {
     async listProjects() {
       return load().projects;
     },
-    async addProject(name) {
+    async addProject(name, color) {
       const db = load();
-      const p = { id: `p_${Date.now()}`, name, color: "#8b4dff" };
+      const p = { id: `p_${Date.now()}`, name, color: color || "#8b4dff" };
       db.projects.push(p);
       save(db);
       return p;
+    },
+    async updateProject(id, patch) {
+      const db = load();
+      db.projects = db.projects.map(p => p.id === id ? { ...p, ...patch } : p);
+      save(db);
+      return db.projects.find(p => p.id === id);
+    },
+    async deleteProject(id) {
+      const db = load();
+      db.projects = db.projects.filter(p => p.id !== id);
+      db.entries = db.entries.map(e => e.projectId === id ? { ...e, projectId: "default" } : e);
+      save(db);
+      return true;
     },
     async getSettings() { return load().settings; },
     async updateSettings(patch) {
@@ -127,17 +140,26 @@ function App() {
               settings={settings}
               projects={projects}
               onCreate={async (entry) => {
+                const ok = validateNoOverlap(entry, entries);
+                if (!ok) return;
                 const e = await api.createEntry(entry);
                 setEntries(prev => [...prev, e]);
               }}
               onUpdate={async (id, patch) => {
+                const next = entries.map(e => e.id === id ? { ...e, ...patch } : e).find(e => e.id === id);
+                if (next && !validateNoOverlap(next, entries.filter(e => e.id !== id))) return;
                 const e = await api.updateEntry(id, patch);
                 setEntries(prev => prev.map(x => x.id === id ? e : x));
               }}
               onSelect={setSelectedEntry}
             />
           ) : (
-            <WeekView date={date} entries={entries} settings={settings} />
+            <WeekView
+              date={date}
+              entries={entries}
+              settings={settings}
+              onSelectDay={(d) => { setDate(d); setView("day"); }}
+            />
           )}
         </div>
 
@@ -153,22 +175,22 @@ function App() {
             </div>
           </div>
 
-          <div>
-            <div className="text-sm text-purple-200/70 mb-2">Projekte</div>
-            <div className="space-y-2">
-              {projects.map(p => (
-                <div key={p.id} className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: p.color }} />{p.name}</span>
-                </div>
-              ))}
-              <button className="text-xs text-purple-200/70 hover:text-white" onClick={async () => {
-                const name = prompt("Projektname?");
-                if (!name) return;
-                const p = await api.addProject(name);
-                setProjects(prev => [...prev, p]);
-              }}>+ Projekt hinzufügen</button>
-            </div>
-          </div>
+          <ProjectManager
+            projects={projects}
+            onAdd={async (name, color) => {
+              const p = await api.addProject(name, color);
+              setProjects(prev => [...prev, p]);
+            }}
+            onUpdate={async (id, patch) => {
+              const p = await api.updateProject(id, patch);
+              setProjects(prev => prev.map(x => x.id === id ? p : x));
+            }}
+            onDelete={async (id) => {
+              await api.deleteProject(id);
+              setProjects(prev => prev.filter(x => x.id !== id));
+              setEntries(prev => prev.map(e => e.projectId === id ? { ...e, projectId: "default" } : e));
+            }}
+          />
 
           <div>
             <div className="text-sm text-purple-200/70 mb-2">Einstellungen</div>
@@ -284,7 +306,7 @@ function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSele
   );
 }
 
-function WeekView({ date, entries, settings }) {
+function WeekView({ date, entries, settings, onSelectDay }) {
   const ws = startOfWeek(date, { weekStartsOn: 1 });
   const days = Array.from({ length: 7 }).map((_, i) => addDays(ws, i));
   const totalByDay = (d) => entries.filter(e => isSameDay(new Date(e.start), d))
@@ -298,7 +320,7 @@ function WeekView({ date, entries, settings }) {
           const mins = totalByDay(d);
           const reached = mins >= settings.dailyGoalHours * 60;
           return (
-            <div key={d.toISOString()} className="rounded-xl p-3 bg-white/5 border border-white/10">
+            <button key={d.toISOString()} onClick={() => onSelectDay(d)} className="text-left rounded-xl p-3 bg-white/5 border border-white/10 hover:border-white/20">
               <div className="text-xs text-purple-200/60">{format(d, "EEE dd")}</div>
               <div className={classNames("text-lg font-semibold", reached ? "text-green-400" : "text-white")}>
                 {Math.floor(mins/60)}h {mins%60}m
@@ -306,7 +328,7 @@ function WeekView({ date, entries, settings }) {
               <div className="h-1 mt-2 rounded bg-white/10">
                 <div className={classNames("h-1 rounded", reached ? "bg-green-400" : "bg-brand-500")} style={{ width: `${Math.min(100, (mins/(settings.dailyGoalHours*60))*100)}%` }} />
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -338,6 +360,45 @@ function EntryEditor({ entry, projects, onClose, onSave, onDelete }) {
       </div>
     </div>
   );
+}
+
+function ProjectManager({ projects, onAdd, onUpdate, onDelete }) {
+  return (
+    <div>
+      <div className="text-sm text-purple-200/70 mb-2">Projekte</div>
+      <div className="space-y-2">
+        {projects.map(p => (
+          <div key={p.id} className="flex items-center gap-2 text-sm">
+            <input type="color" value={p.color} onChange={(e) => onUpdate(p.id, { color: e.target.value })} className="w-6 h-6 rounded" />
+            <input className="flex-1 bg-white/10 rounded px-2 py-1" value={p.name} onChange={(e) => onUpdate(p.id, { name: e.target.value })} />
+            {p.id !== "default" && (
+              <button className="text-xs text-red-300" onClick={() => onDelete(p.id)}>del</button>
+            )}
+          </div>
+        ))}
+        <button className="text-xs text-purple-200/70 hover:text-white" onClick={() => {
+          const name = prompt("Projektname?");
+          if (!name) return;
+          onAdd(name, "#8b4dff");
+        }}>+ Projekt hinzufügen</button>
+      </div>
+    </div>
+  );
+}
+
+function validateNoOverlap(candidate, entries) {
+  const cStart = new Date(candidate.start).getTime();
+  const cEnd = new Date(candidate.end).getTime();
+  const overlap = entries.some(e => {
+    const s = new Date(e.start).getTime();
+    const en = new Date(e.end).getTime();
+    return cStart < en && cEnd > s;
+  });
+  if (overlap) {
+    alert("Eintrag überschneidet sich mit einem anderen.");
+    return false;
+  }
+  return true;
 }
 
 function btnCls(active) {
