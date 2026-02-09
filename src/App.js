@@ -467,7 +467,7 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
                 minHeight={minEntryPixelHeight}
                 onDragStart={() => { justInteractedRef.current = true; }}
                 onDragStop={(_, d) => {
-                  const mins = Math.round(d.y / minuteHeight / settings.minEntryMinutes) * settings.minEntryMinutes;
+                  const mins = Math.round((d.y - topOffset) / minuteHeight / settings.minEntryMinutes) * settings.minEntryMinutes;
                   const ns = new Date(date); ns.setHours(0, mins, 0, 0);
                   const duration = differenceInMinutes(end, start);
                   const ne = new Date(ns); ne.setMinutes(ne.getMinutes() + duration);
@@ -477,8 +477,8 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
                 onResizeStart={() => { justInteractedRef.current = true; }}
                 onResizeStop={(_, __, ref, ___, position) => {
                   const newHeight = ref.offsetHeight;
-                  const mins = Math.round(position.y / minuteHeight / settings.minEntryMinutes) * settings.minEntryMinutes;
-                  const step = 5;
+                  const mins = Math.round((position.y - topOffset) / minuteHeight / settings.minEntryMinutes) * settings.minEntryMinutes;
+                  const step = settings.minEntryMinutes;
                   const dur = Math.max(settings.minEntryMinutes, Math.round(newHeight / minuteHeight / step) * step);
                   const ns = new Date(date); ns.setHours(0, mins, 0, 0);
                   const ne = new Date(ns); ne.setMinutes(ne.getMinutes() + dur);
