@@ -337,7 +337,7 @@ function App() {
         />
       )}
 
-      <div className="mt-4 text-[11px] text-purple-200/50 text-center">
+      <div className="fixed bottom-4 left-0 right-0 text-[11px] text-purple-200/50 text-center pointer-events-none">
         Version {appVersion}
       </div>
 
