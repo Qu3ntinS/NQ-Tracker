@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { format, startOfWeek, addDays, isSameDay, startOfDay, endOfDay, differenceInMinutes, addMinutes } from "date-fns";
+import { format, startOfWeek, addDays, isSameDay, startOfDay, endOfDay, differenceInMinutes } from "date-fns";
 import { Rnd } from "react-rnd";
 import classNames from "classnames";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Plus, Trash2 } from "lucide-react";
 
 const minuteHeight = 1.1; // px per minute
 const minEntryDefault = 15;
@@ -124,14 +125,19 @@ function App() {
   return (
     <div className="min-h-screen p-6">
       <div className="glass rounded-2xl p-4 mb-4 flex items-center justify-between">
-        <div>
-          <div className="text-sm text-purple-200/80">NQ Tracker</div>
-          <div className="text-2xl font-semibold">Timetable</div>
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-lg bg-brand-600/30">
+            <Clock3 size={18} className="text-brand-200" />
+          </div>
+          <div>
+            <div className="text-sm text-purple-200/80">NQ Tracker</div>
+            <div className="text-2xl font-semibold">Timetable</div>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className={btnCls()} onClick={goPrev}>←</button>
-          <button className={btnCls()} onClick={goToday}>Heute</button>
-          <button className={btnCls()} onClick={goNext}>→</button>
+          <button className={btnCls()} onClick={goPrev}><ChevronLeft size={16} /></button>
+          <button className={btnCls()} onClick={goToday}><CalendarDays size={16} className="mr-1" /> Heute</button>
+          <button className={btnCls()} onClick={goNext}><ChevronRight size={16} /></button>
         </div>
         <div className="flex items-center gap-2">
           <button className={btnCls(view==="day")} onClick={() => setView("day")}>Day</button>
@@ -246,7 +252,6 @@ function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSele
   const scrollerRef = useRef(null);
 
   useEffect(() => {
-    // auto-scroll near current time
     const now = new Date();
     if (!isSameDay(now, date)) return;
     const mins = now.getHours() * 60 + now.getMinutes();
@@ -403,15 +408,15 @@ function ProjectManager({ projects, onAdd, onUpdate, onDelete }) {
             <input type="color" value={p.color} onChange={(e) => onUpdate(p.id, { color: e.target.value })} className="w-6 h-6 rounded" />
             <input className="flex-1 bg-white/10 rounded px-2 py-1" value={p.name} onChange={(e) => onUpdate(p.id, { name: e.target.value })} />
             {p.id !== "default" && (
-              <button className="text-xs text-red-300" onClick={() => onDelete(p.id)}>del</button>
+              <button className="text-xs text-red-300" onClick={() => onDelete(p.id)}><Trash2 size={14} /></button>
             )}
           </div>
         ))}
-        <button className="text-xs text-purple-200/70 hover:text-white" onClick={() => {
+        <button className="text-xs text-purple-200/70 hover:text-white flex items-center gap-1" onClick={() => {
           const name = prompt("Projektname?");
           if (!name) return;
           onAdd(name, "#8b4dff");
-        }}>+ Projekt hinzufügen</button>
+        }}><Plus size={14} /> Projekt hinzufügen</button>
       </div>
     </div>
   );
@@ -434,7 +439,7 @@ function validateNoOverlap(candidate, entries) {
 
 function btnCls(active) {
   return classNames(
-    "px-3 py-1 rounded-lg text-sm",
+    "px-3 py-1 rounded-lg text-sm inline-flex items-center justify-center gap-1",
     active ? "bg-brand-600 text-white shadow-glow" : "bg-white/10 text-purple-200/80"
   );
 }
