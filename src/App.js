@@ -249,21 +249,10 @@ function App() {
               </div>
             </div>
 
-            <ProjectManager
+            <ProjectSummary
+              date={date}
+              entries={entries}
               projects={projects}
-              onAdd={async (name, color) => {
-                const p = await api.addProject(name, color);
-                setProjects(prev => [...prev, p]);
-              }}
-              onUpdate={async (id, patch) => {
-                const p = await api.updateProject(id, patch);
-                setProjects(prev => prev.map(x => x.id === id ? p : x));
-              }}
-              onDelete={async (id) => {
-                await api.deleteProject(id);
-                setProjects(prev => prev.filter(x => x.id !== id));
-                setEntries(prev => prev.map(e => e.projectId === id ? { ...e, projectId: "default" } : e));
-              }}
             />
           </div>
         </div>
@@ -490,6 +479,43 @@ function WeekView({ date, entries, settings, onSelectDay }) {
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+
+function ProjectSummary({ date, entries, projects }) {
+  const dayEntries = entries.filter(e => isSameDay(new Date(e.start), date));
+  const totals = dayEntries.reduce((acc, e) => {
+    const mins = differenceInMinutes(new Date(e.end), new Date(e.start));
+    acc[e.projectId] = (acc[e.projectId] || 0) + mins;
+    return acc;
+  }, {});
+  const rows = Object.entries(totals)
+    .map(([projectId, minutes]) => ({
+      projectId,
+      minutes,
+      name: projects.find(p => p.id === projectId)?.name || "Projekt",
+    }))
+    .sort((a, b) => b.minutes - a.minutes);
+
+  return (
+    <div>
+      <div className="text-sm text-purple-200/70 mb-2 flex items-center justify-between">
+        <span>Projektname</span>
+        <span>⏱</span>
+      </div>
+      <div className="space-y-2 text-sm">
+        {rows.length === 0 && (
+          <div className="text-xs text-purple-200/60">Noch keine Einträge</div>
+        )}
+        {rows.map(r => (
+          <div key={r.projectId} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+            <div className="truncate">{r.name}</div>
+            <div className="text-xs text-purple-200/80">{formatDuration(r.minutes)}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
