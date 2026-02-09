@@ -14,7 +14,35 @@ permissions:
   contents: write
 
 jobs:
+  tag:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set tag (manual trigger)
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          VERSION="$RELEASE_VERSION"
+          if [[ ! "$VERSION" =~ ^v ]]; then
+            VERSION="v$VERSION"
+          fi
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9._-]+)?$ ]]; then
+            echo "Invalid version: $VERSION" >&2
+            exit 1
+          fi
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag "$VERSION"
+          git push origin "$VERSION"
+
   build:
+    if: github.event_name == 'push'
     strategy:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
@@ -33,25 +61,6 @@ jobs:
 
       - name: Install deps
         run: npm ci
-
-      - name: Set tag (manual trigger)
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          RELEASE_VERSION: ${{ inputs.version }}
-        run: |
-          set -euo pipefail
-          VERSION="$RELEASE_VERSION"
-          if [[ ! "$VERSION" =~ ^v ]]; then
-            VERSION="v$VERSION"
-          fi
-          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9._-]+)?$ ]]; then
-            echo "Invalid version: $VERSION" >&2
-            exit 1
-          fi
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git tag "$VERSION"
-          git push origin "$VERSION"
 
       - name: Build & Release
         env:
