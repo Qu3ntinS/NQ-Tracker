@@ -85,5 +85,11 @@ jobs:
             echo "Invalid version: $VERSION" >&2
             exit 1
           fi
+          shopt -s nullglob
           gh release view "$VERSION" >/dev/null 2>&1 || gh release create "$VERSION" -t "$VERSION" -n ""
-          gh release upload "$VERSION" dist/*.AppImage dist/*.dmg dist/*.exe dist/*.zip dist/*.yml dist/*.blockmap --clobber
+          files=(dist/*.AppImage dist/*.dmg dist/*.exe dist/*.zip dist/*.yml dist/*.blockmap)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No release artifacts found in dist/" >&2
+            exit 1
+          fi
+          gh release upload "$VERSION" "${files[@]}" --clobber
