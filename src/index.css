@@ -60,6 +60,7 @@ body {
 .bg-brand-600\/30 { background-color: rgba(var(--accent-rgb),0.3) !important; }
 .bg-brand-600\/70 { background-color: rgba(var(--accent-rgb),0.7) !important; }
 .bg-brand-400\/20 { background-color: rgba(var(--accent-rgb),0.2) !important; }
+.bg-brand-500\/40 { background-color: rgba(var(--accent-rgb),0.4) !important; }
 .border-brand-300\/40 { border-color: rgba(var(--accent-rgb),0.4) !important; }
 
 .text-brand-100,
