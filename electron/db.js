@@ -45,7 +45,10 @@ function initDb() {
 
 function getSettings() {
   const rows = db.prepare("SELECT key, value FROM settings").all();
-  return rows.reduce((acc, r) => ({ ...acc, [r.key]: Number(r.value) }), {});
+  return rows.reduce((acc, r) => {
+    if (r.key === "theme" || r.key === "themeCustom") return { ...acc, [r.key]: r.value };
+    return { ...acc, [r.key]: Number(r.value) };
+  }, {});
 }
 
 function updateSettings(patch) {
