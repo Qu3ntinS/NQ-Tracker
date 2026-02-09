@@ -241,11 +241,17 @@ function App() {
           projects={projects}
           onAddProject={async (name, color) => {
             const p = await api.addProject(name, color);
-            setProjects(prev => [...prev, p]);
+            if (p) {
+              setProjects(prev => [...prev, p]);
+            } else {
+              const projs = await api.listProjects();
+              setProjects(projs);
+            }
           }}
           onUpdateProject={async (id, patch) => {
-            const p = await api.updateProject(id, patch);
-            setProjects(prev => prev.map(x => x.id === id ? p : x));
+            setProjects(prev => prev.map(x => x.id === id ? { ...x, ...patch } : x));
+            const p = await api.updateProject?.(id, patch);
+            if (p) setProjects(prev => prev.map(x => x.id === id ? p : x));
           }}
           onDeleteProject={async (id) => {
             await api.deleteProject(id);
@@ -484,6 +490,12 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
             const top = (start.getHours() * 60 + start.getMinutes()) * minuteHeight + topOffset;
             const durationMin = differenceInMinutes(end, start);
             const height = Math.max(minEntryPixelHeight, durationMin * minuteHeight);
+            const pColor = projects.find(p => p.id === entry.projectId)?.color || "#8b4dff";
+            const rgb = hexToRgb(pColor) || "139, 77, 255";
+            const cardStyle = {
+              background: `linear-gradient(135deg, rgba(${rgb},0.75), rgba(${rgb},0.45))`,
+              borderColor: `rgba(${rgb},0.7)`
+            };
             return (
               <Rnd
                 key={entry.id}
@@ -522,7 +534,8 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
                     if (entry.comment) navigator.clipboard?.writeText(entry.comment);
                   }
                 }}
-                className="entry-card rounded-xl bg-gradient-to-br from-brand-600/70 to-brand-800/60 border border-white/20 shadow-glass text-white"
+                className="entry-card rounded-xl border shadow-glass text-white"
+                style={cardStyle}
               >
                 <div className={classNames("p-2 text-xs", durationMin <= 15 && "py-1")}
                      title={`${projects.find(p => p.id === entry.projectId)?.name || "Projekt"} · ${format(start, "HH:mm")}–${format(end, "HH:mm")}`}
