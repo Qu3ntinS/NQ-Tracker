@@ -130,6 +130,13 @@ function App() {
       setSidebarWidth(width);
     };
     const stop = () => setResizing(false);
+    if (resizing) {
+      document.body.style.userSelect = "none";
+      document.body.style.cursor = "col-resize";
+    } else {
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+    }
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", stop);
     window.addEventListener("mouseleave", stop);
@@ -139,6 +146,8 @@ function App() {
       window.removeEventListener("mouseup", stop);
       window.removeEventListener("mouseleave", stop);
       window.removeEventListener("blur", stop);
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
     };
   }, [resizing]);
 
