@@ -113,9 +113,13 @@ jobs:
             echo "No release artifacts found in dist/" >&2
             exit 1
           fi
-          # delete existing assets (avoids 500s on clobber)
+          # delete existing assets (avoids 422/500 on upload)
           for f in "${files[@]}"; do
             name=$(basename "$f")
+            gh release delete-asset "$VERSION" "$name" -y >/dev/null 2>&1 || true
+          done
+          # also delete known generated names that may not be in dist
+          for name in builder-debug.yml latest.yml latest-mac.yml latest-linux.yml; do
             gh release delete-asset "$VERSION" "$name" -y >/dev/null 2>&1 || true
           done
           # upload with one retry
