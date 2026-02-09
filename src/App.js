@@ -852,7 +852,7 @@ function parseDurationInput(val) {
   const v = val.trim().toLowerCase();
   const hm = v.match(/^(\d+)\s*[:h]\s*(\d{1,2})$/);
   if (hm) return parseInt(hm[1], 10) * 60 + parseInt(hm[2], 10);
-  const hOnly = v.match(/^(\d+(?:[\.,]\d+)?)\s*h$/);
+  const hOnly = v.match(/^(\d+(?:[.,]\d+)?)\s*h$/);
   if (hOnly) return Math.round(parseFloat(hOnly[1].replace(',', '.')) * 60);
   const mOnly = v.match(/^(\d+)\s*m?$/);
   if (mOnly) return parseInt(mOnly[1], 10);
