@@ -88,6 +88,8 @@ function App() {
   const [settings, setSettings] = useState({ minEntryMinutes: minEntryDefault, dailyGoalHours: dailyGoalDefault });
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [updateStatus, setUpdateStatus] = useState("");
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [resizing, setResizing] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -105,6 +107,21 @@ function App() {
       setTimeout(() => setUpdateStatus("") , 4000);
     });
   }, []);
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!resizing) return;
+      const width = Math.max(260, Math.min(520, window.innerWidth - e.clientX));
+      setSidebarWidth(width);
+    };
+    const onUp = () => setResizing(false);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [resizing]);
 
   const loadEntries = async (rangeStart, rangeEnd) => {
     const items = await api.listEntries(rangeStart, rangeEnd);
@@ -182,8 +199,8 @@ function App() {
           }}
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-          <div className="glass rounded-2xl p-4">
+        <div className="flex gap-3">
+          <div className="glass rounded-2xl p-4 flex-1 min-w-0">
             {view === "day" ? (
               <DayView
                 date={date}
@@ -214,7 +231,13 @@ function App() {
             )}
           </div>
 
-          <div className="glass rounded-2xl p-4 space-y-4">
+          <div
+            className={classNames("w-2 cursor-col-resize rounded-md", resizing ? "bg-brand-500/40" : "bg-white/5 hover:bg-white/10")}
+            onMouseDown={() => setResizing(true)}
+            title="Sidebar Größe ändern"
+          />
+
+          <div className="glass rounded-2xl p-4 space-y-4" style={{ width: sidebarWidth, minWidth: 260 }}>
             <div>
               <div className="text-sm text-purple-200/70">Tagesziel</div>
               <div className={classNames("text-3xl font-semibold", goalReached ? "text-green-400" : "text-white")}>
@@ -274,6 +297,7 @@ function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSele
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState(null);
   const [dragCurrent, setDragCurrent] = useState(null);
+  const justInteractedRef = useRef(false);
 
   useEffect(() => {
     const now = new Date();
@@ -382,13 +406,16 @@ function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSele
                 dragAxis="y"
                 enableResizing={{ top: true, bottom: true, left: false, right: false }}
                 grid={[1, settings.minEntryMinutes * minuteHeight]}
+                onDragStart={() => { justInteractedRef.current = true; }}
                 onDragStop={(_, d) => {
                   const mins = Math.round(d.y / minuteHeight / settings.minEntryMinutes) * settings.minEntryMinutes;
                   const ns = new Date(date); ns.setHours(0, mins, 0, 0);
                   const duration = differenceInMinutes(end, start);
                   const ne = new Date(ns); ne.setMinutes(ne.getMinutes() + duration);
                   onUpdate(entry.id, { start: ns.toISOString(), end: ne.toISOString() });
+                  setTimeout(() => { justInteractedRef.current = false; }, 120);
                 }}
+                onResizeStart={() => { justInteractedRef.current = true; }}
                 onResizeStop={(_, __, ref, ___, position) => {
                   const newHeight = ref.offsetHeight;
                   const mins = Math.round(position.y / minuteHeight / settings.minEntryMinutes) * settings.minEntryMinutes;
@@ -396,14 +423,17 @@ function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSele
                   const ns = new Date(date); ns.setHours(0, mins, 0, 0);
                   const ne = new Date(ns); ne.setMinutes(ne.getMinutes() + dur);
                   onUpdate(entry.id, { start: ns.toISOString(), end: ne.toISOString() });
+                  setTimeout(() => { justInteractedRef.current = false; }, 120);
                 }}
-                onClick={(e) => { e.stopPropagation(); onSelect(entry); }}
+                onClick={(e) => { e.stopPropagation(); if (justInteractedRef.current) return; onSelect(entry); }}
                 className="entry-card rounded-xl bg-gradient-to-br from-brand-600/70 to-brand-800/60 border border-white/20 shadow-glass text-white"
               >
-                <div className="p-2 text-xs">
-                  <div className="font-medium">{projects.find(p => p.id === entry.projectId)?.name || "Projekt"}</div>
-                  <div className="opacity-80">{format(start, "HH:mm")} – {format(end, "HH:mm")} · {durationMin}m</div>
-                  {entry.comment && <div className="opacity-70 truncate">{entry.comment}</div>}
+                <div className={classNames("p-2 text-xs", durationMin <= 15 && "py-1")}
+                     title={`${projects.find(p => p.id === entry.projectId)?.name || "Projekt"} · ${format(start, "HH:mm")}–${format(end, "HH:mm")}`}
+                >
+                  <div className={classNames("font-medium truncate", durationMin <= 15 && "text-[11px]")}>{projects.find(p => p.id === entry.projectId)?.name || "Projekt"}</div>
+                  <div className={classNames("opacity-80 truncate", durationMin <= 15 && "text-[10px]")}>{format(start, "HH:mm")} – {format(end, "HH:mm")}</div>
+                  {durationMin > 15 && entry.comment && <div className="opacity-70 truncate">{entry.comment}</div>}
                 </div>
               </Rnd>
             );
