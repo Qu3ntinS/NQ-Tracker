@@ -493,8 +493,9 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
             const pColor = projects.find(p => p.id === entry.projectId)?.color || "#8b4dff";
             const rgb = hexToRgb(pColor) || "139, 77, 255";
             const cardStyle = {
-              background: `linear-gradient(135deg, rgba(${rgb},0.75), rgba(${rgb},0.45))`,
-              borderColor: `rgba(${rgb},0.7)`
+              background: `linear-gradient(135deg, rgba(${rgb},0.28), rgba(${rgb},0.18))`,
+              borderColor: `rgba(255,255,255,0.18)`,
+              boxShadow: `0 8px 24px rgba(${rgb},0.18)`
             };
             return (
               <Rnd
