@@ -430,6 +430,7 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
             </div>
           )}
 
+          <div className="absolute left-14 right-2 top-0">
           {dayEntries.map((entry) => {
             const start = new Date(entry.start);
             const end = new Date(entry.end);
@@ -439,8 +440,8 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
             return (
               <Rnd
                 key={entry.id}
-                size={{ width: "calc(100% - 64px)", height }}
-                position={{ x: 56, y: top }}
+                size={{ width: "100%", height }}
+                position={{ x: 0, y: top }}
                 bounds="parent"
                 dragAxis="y"
                 enableResizing={{ top: true, bottom: true, left: false, right: false }}
@@ -483,6 +484,7 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
               </Rnd>
             );
           })}
+          </div>
         </div>
       </div>
     </div>
