@@ -92,6 +92,7 @@ function App() {
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [resizing, setResizing] = useState(false);
   const [draftEntry, setDraftEntry] = useState(null);
+  const [appVersion, setAppVersion] = useState("?");
 
   useEffect(() => {
     (async () => {
@@ -112,6 +113,14 @@ function App() {
       if (!msg) return;
       setTimeout(() => setUpdateStatus("") , 4000);
     });
+  }, []);
+
+  useEffect(() => {
+    api.getVersion?.().then((v) => setAppVersion(v || "?"));
+    const id = setInterval(() => {
+      api.requestUpdateCheck?.();
+    }, 60 * 60 * 1000);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
@@ -302,6 +311,10 @@ function App() {
           }}
         />
       )}
+
+      <div className="mt-4 text-[11px] text-purple-200/50 text-center">
+        Version {appVersion}
+      </div>
 
       {draftEntry && (
         <CreateEntryModal

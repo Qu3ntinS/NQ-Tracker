@@ -66,6 +66,7 @@ app.whenReady().then(() => {
     if (isDev) return null;
     return autoUpdater.checkForUpdatesAndNotify();
   });
+  ipcMain.handle("app:version", async () => app.getVersion());
 
   createWindow();
   initAutoUpdate();
