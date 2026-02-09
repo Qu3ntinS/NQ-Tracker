@@ -465,7 +465,8 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
                 onResizeStop={(_, __, ref, ___, position) => {
                   const newHeight = ref.offsetHeight;
                   const mins = Math.round(position.y / minuteHeight / settings.minEntryMinutes) * settings.minEntryMinutes;
-                  const dur = Math.max(settings.minEntryMinutes, Math.round(newHeight / minuteHeight / settings.minEntryMinutes) * settings.minEntryMinutes);
+                  const step = 5;
+                  const dur = Math.max(settings.minEntryMinutes, Math.round(newHeight / minuteHeight / step) * step);
                   const ns = new Date(date); ns.setHours(0, mins, 0, 0);
                   const ne = new Date(ns); ne.setMinutes(ne.getMinutes() + dur);
                   onUpdate(entry.id, { start: ns.toISOString(), end: ne.toISOString() });
@@ -666,6 +667,16 @@ function CreateEntryModal({ entry, projects, settings, onClose, onCreate }) {
           <div className="text-xs text-purple-200/70">
             {formatDuration(durationMin)}
           </div>
+          <label className="block">
+            Dauer
+            <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" value={durationToInput(durationMin)} onChange={(e) => {
+              const mins = parseDurationInput(e.target.value);
+              if (mins === null) return;
+              const d = new Date(draft.start);
+              const ne = new Date(d); ne.setMinutes(ne.getMinutes() + mins);
+              setDraft({ ...draft, end: ne.toISOString() });
+            }} />
+          </label>
           <div className="flex items-center gap-2">
             <label className="flex-1">
               Start
@@ -719,6 +730,16 @@ function EntryEditor({ entry, projects, settings, onClose, onSave, onDelete }) {
           <div className="text-xs text-purple-200/70">
             {formatDuration(durationMin)}
           </div>
+          <label className="block">
+            Dauer
+            <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" value={durationToInput(durationMin)} onChange={(e) => {
+              const mins = parseDurationInput(e.target.value);
+              if (mins === null) return;
+              const d = new Date(entry.start);
+              const ne = new Date(d); ne.setMinutes(ne.getMinutes() + mins);
+              onSave({ end: ne.toISOString() });
+            }} />
+          </label>
           <div className="flex items-center gap-2">
             <label className="flex-1">
               Start
@@ -772,6 +793,27 @@ function hexToRgb(hex) {
   const g = parseInt(h.slice(2, 4), 16);
   const b = parseInt(h.slice(4, 6), 16);
   return `${r}, ${g}, ${b}`;
+}
+
+function durationToInput(mins) {
+  if (mins >= 60) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h}:${m.toString().padStart(2, "0")}`;
+  }
+  return String(mins);
+}
+
+function parseDurationInput(val) {
+  if (!val) return null;
+  const v = val.trim().toLowerCase();
+  const hm = v.match(/^(\d+)\s*[:h]\s*(\d{1,2})$/);
+  if (hm) return parseInt(hm[1], 10) * 60 + parseInt(hm[2], 10);
+  const hOnly = v.match(/^(\d+(?:[\.,]\d+)?)\s*h$/);
+  if (hOnly) return Math.round(parseFloat(hOnly[1].replace(',', '.')) * 60);
+  const mOnly = v.match(/^(\d+)\s*m?$/);
+  if (mOnly) return parseInt(mOnly[1], 10);
+  return null;
 }
 
 function formatDuration(mins) {
