@@ -656,6 +656,8 @@ function ThemeDropdown({ value, onChange }) {
 }
 
 function SettingsPage({ settings, onChange, projects, onAddProject, onUpdateProject, onDeleteProject }) {
+  const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectColor, setNewProjectColor] = useState("#8b4dff");
   return (
     <div className="glass rounded-2xl p-6 w-full max-w-none space-y-6">
       <div>
@@ -715,11 +717,16 @@ function SettingsPage({ settings, onChange, projects, onAddProject, onUpdateProj
               )}
             </div>
           ))}
-          <button className="text-xs text-purple-200/70 hover:text-white" onClick={() => {
-            const name = prompt("Projektname?");
-            if (!name) return;
-            onAddProject(name, "#8b4dff");
-          }}>+ Projekt hinzufügen</button>
+          <div className="flex items-center gap-2">
+            <input className="flex-1 bg-white/10 rounded px-2 py-1 text-sm" placeholder="Projektname" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} />
+            <input type="color" value={newProjectColor} onChange={(e) => setNewProjectColor(e.target.value)} className="w-8 h-8 rounded" />
+            <button className="text-xs bg-white/10 rounded px-2 py-1" onClick={() => {
+              const name = newProjectName.trim();
+              if (!name) return;
+              onAddProject(name, newProjectColor);
+              setNewProjectName("");
+            }}>+ hinzufügen</button>
+          </div>
         </div>
       </div>
     </div>
