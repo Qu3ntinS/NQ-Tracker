@@ -584,6 +584,35 @@ function ProjectSummary({ date, entries, projects }) {
   );
 }
 
+function ThemeDropdown({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const label = {
+    purple: "Purple",
+    blue: "Blue",
+    green: "Green",
+    mono: "Mono",
+    custom: "Custom",
+  }[value] || "Purple";
+
+  return (
+    <div className="relative text-sm">
+      <button className="w-full flex items-center justify-between bg-white/10 border border-white/10 rounded px-2 py-1" onClick={() => setOpen(!open)}>
+        <span>{label}</span>
+        <span className="text-purple-200/60">▾</span>
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded-lg border border-white/10 bg-black/80 backdrop-blur p-1">
+          {["purple","blue","green","mono","custom"].map((k) => (
+            <button key={k} className={`w-full text-left px-2 py-1 rounded hover:bg-white/10 ${value===k?'bg-white/10':''}`} onClick={() => { onChange(k); setOpen(false); }}>
+              {{purple:"Purple",blue:"Blue",green:"Green",mono:"Mono",custom:"Custom"}[k]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SettingsPage({ settings, onChange, projects, onAddProject, onUpdateProject, onDeleteProject }) {
   return (
     <div className="glass rounded-2xl p-6 max-w-xl space-y-6">
@@ -616,21 +645,13 @@ function SettingsPage({ settings, onChange, projects, onAddProject, onUpdateProj
 
       <div>
         <div className="text-sm text-purple-200/70 mb-2">Theme</div>
-        <div className="space-y-2 text-sm">
-          <select className="w-full select-theme rounded px-2 py-1 appearance-none pr-8" value={settings.theme} onChange={(e) => onChange({ theme: e.target.value })}>
-            <option value="purple">Purple</option>
-            <option value="blue">Blue</option>
-            <option value="green">Green</option>
-            <option value="mono">Mono</option>
-            <option value="custom">Custom</option>
-          </select>
-          {settings.theme === "custom" && (
-            <div className="flex items-center gap-2">
-              <input className="flex-1 bg-white/10 rounded px-2 py-1" value={settings.themeCustom || ""} onChange={(e) => onChange({ themeCustom: e.target.value })} placeholder="#8b4dff" />
-              <input type="color" value={settings.themeCustom || "#8b4dff"} onChange={(e) => onChange({ themeCustom: e.target.value })} className="w-10 h-8 rounded" />
-            </div>
-          )}
-        </div>
+        <ThemeDropdown value={settings.theme} onChange={(v) => onChange({ theme: v })} />
+        {settings.theme === "custom" && (
+          <div className="mt-2 flex items-center gap-2">
+            <input className="flex-1 bg-white/10 rounded px-2 py-1" value={settings.themeCustom || ""} onChange={(e) => onChange({ themeCustom: e.target.value })} placeholder="#8b4dff" />
+            <input type="color" value={settings.themeCustom || "#8b4dff"} onChange={(e) => onChange({ themeCustom: e.target.value })} className="w-10 h-8 rounded" />
+          </div>
+        )}
       </div>
 
       <div>
