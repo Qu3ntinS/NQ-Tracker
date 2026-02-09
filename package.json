@@ -58,6 +58,7 @@
   "build": {
     "appId": "com.nq.tracker",
     "productName": "NQ Tracker",
+    "artifactName": "NQ-Tracker-${version}.${ext}",
     "extraMetadata": {
       "main": "electron/main.js"
     },

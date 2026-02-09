@@ -44,7 +44,7 @@ function initAutoUpdate() {
   autoUpdater.on("download-progress", (p) => sendUpdateStatus(`Update lädt… ${Math.round(p.percent)}%`));
   autoUpdater.on("update-downloaded", () => sendUpdateStatus("Update bereit – App startet neu"));
 
-  autoUpdater.checkForUpdatesAndNotify();
+  autoUpdater.checkForUpdatesAndNotify().catch((e) => sendUpdateStatus(`Update Fehler: ${e?.message || e}`));
 }
 
 app.whenReady().then(() => {
