@@ -59,6 +59,10 @@ app.whenReady().then(() => {
   ipcMain.handle("db:addProject", async (_e, name) => db.addProject(name));
   ipcMain.handle("db:getSettings", async () => db.getSettings());
   ipcMain.handle("db:updateSettings", async (_e, patch) => db.updateSettings(patch));
+  ipcMain.handle("update:check", async () => {
+    if (isDev) return null;
+    return autoUpdater.checkForUpdatesAndNotify();
+  });
 
   createWindow();
   initAutoUpdate();

@@ -90,6 +90,7 @@ function App() {
   const [updateStatus, setUpdateStatus] = useState("");
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [resizing, setResizing] = useState(false);
+  const [draftEntry, setDraftEntry] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -182,6 +183,7 @@ function App() {
           <button className={btnCls(page === "settings")} onClick={() => setPage("settings")}>
             <Settings size={16} className="mr-1" /> Settings
           </button>
+          <button className={btnCls()} onClick={() => api.requestUpdateCheck?.()}>Updates prüfen</button>
         </div>
       </div>
       {updateStatus && (
@@ -207,11 +209,8 @@ function App() {
                 entries={entries}
                 settings={settings}
                 projects={projects}
-                onCreate={async (entry) => {
-                  const ok = validateNoOverlap(entry, entries);
-                  if (!ok) return;
-                  const e = await api.createEntry(entry);
-                  setEntries(prev => [...prev, e]);
+                onCreateRequest={(entry) => {
+                  setDraftEntry(entry);
                 }}
                 onUpdate={async (id, patch) => {
                   const next = entries.map(e => e.id === id ? { ...e, ...patch } : e).find(e => e.id === id);
@@ -286,11 +285,26 @@ function App() {
           }}
         />
       )}
+
+      {draftEntry && (
+        <CreateEntryModal
+          entry={draftEntry}
+          projects={projects}
+          onClose={() => setDraftEntry(null)}
+          onCreate={async (entry) => {
+            const ok = validateNoOverlap(entry, entries);
+            if (!ok) return;
+            const e = await api.createEntry(entry);
+            setEntries(prev => [...prev, e]);
+            setDraftEntry(null);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSelect }) {
+function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate, onSelect }) {
   const dayEntries = entries.filter(e => isSameDay(new Date(e.start), date));
   const totalHeight = 1440 * minuteHeight;
   const scrollerRef = useRef(null);
@@ -340,7 +354,7 @@ function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSele
     start.setHours(0, startMin, 0, 0);
     const end = new Date(date);
     end.setHours(0, endMin, 0, 0);
-    await onCreate({ start: start.toISOString(), end: end.toISOString(), projectId: projects[0]?.id || "default", comment: "" });
+    onCreateRequest({ start: start.toISOString(), end: end.toISOString(), projectId: projects[0]?.id || "default", comment: "" });
     setDragStart(null);
     setDragCurrent(null);
   };
@@ -431,8 +445,13 @@ function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSele
                 <div className={classNames("p-2 text-xs", durationMin <= 15 && "py-1")}
                      title={`${projects.find(p => p.id === entry.projectId)?.name || "Projekt"} · ${format(start, "HH:mm")}–${format(end, "HH:mm")}`}
                 >
-                  <div className={classNames("font-medium truncate", durationMin <= 15 && "text-[11px]")}>{projects.find(p => p.id === entry.projectId)?.name || "Projekt"}</div>
-                  <div className={classNames("opacity-80 truncate", durationMin <= 15 && "text-[10px]")}>{format(start, "HH:mm")} – {format(end, "HH:mm")}</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className={classNames("font-medium truncate", durationMin <= 15 && "text-[11px]")}>{projects.find(p => p.id === entry.projectId)?.name || "Projekt"}</div>
+                    <div className={classNames("text-[10px] text-white/80", durationMin <= 15 && "text-[10px]")}>{formatDuration(durationMin)}</div>
+                  </div>
+                  {durationMin > 15 ? (
+                    <div className="opacity-80 truncate">{format(start, "HH:mm")} – {format(end, "HH:mm")}</div>
+                  ) : null}
                   {durationMin > 15 && entry.comment && <div className="opacity-70 truncate">{entry.comment}</div>}
                 </div>
               </Rnd>
@@ -505,6 +524,43 @@ function SettingsPage({ settings, onChange }) {
   );
 }
 
+function CreateEntryModal({ entry, projects, onClose, onCreate }) {
+  const [draft, setDraft] = useState(entry);
+  const start = new Date(draft.start);
+  const end = new Date(draft.end);
+  const durationMin = differenceInMinutes(end, start);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="glass rounded-2xl p-4 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-sm font-semibold">Neuer Eintrag</div>
+          <button className="text-xs text-purple-200/70" onClick={onClose}>schließen</button>
+        </div>
+        <div className="space-y-3 text-sm">
+          <div className="text-xs text-purple-200/70">
+            {format(start, "HH:mm")} – {format(end, "HH:mm")} · {formatDuration(durationMin)}
+          </div>
+          <label className="block">
+            Projekt
+            <select className="mt-1 w-full bg-white/10 rounded px-2 py-1" value={draft.projectId} onChange={(e) => setDraft({ ...draft, projectId: e.target.value })}>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            Kommentar
+            <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" value={draft.comment || ""} onChange={(e) => setDraft({ ...draft, comment: e.target.value })} />
+          </label>
+          <div className="flex items-center justify-between">
+            <button className="text-xs text-purple-200/70" onClick={onClose}>abbrechen</button>
+            <button className="bg-brand-600 px-3 py-1 rounded text-xs" onClick={() => onCreate(draft)}>speichern</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EntryEditor({ entry, projects, onClose, onSave, onDelete }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
@@ -556,6 +612,15 @@ function ProjectManager({ projects, onAdd, onUpdate, onDelete }) {
       </div>
     </div>
   );
+}
+
+function formatDuration(mins) {
+  if (mins >= 60) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m ? `${h}h ${m}m` : `${h}h`;
+  }
+  return `${mins}m`;
 }
 
 function validateNoOverlap(candidate, entries) {

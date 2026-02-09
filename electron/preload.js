@@ -10,5 +10,6 @@ contextBridge.exposeInMainWorld("nqApi", {
   addProject: (name) => ipcRenderer.invoke("db:addProject", name),
   getSettings: () => ipcRenderer.invoke("db:getSettings"),
   updateSettings: (patch) => ipcRenderer.invoke("db:updateSettings", patch),
-  onUpdateStatus: (cb) => ipcRenderer.on("update:status", (_e, msg) => cb(msg))
+  onUpdateStatus: (cb) => ipcRenderer.on("update:status", (_e, msg) => cb(msg)),
+  requestUpdateCheck: () => ipcRenderer.invoke("update:check")
 });
