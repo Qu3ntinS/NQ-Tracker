@@ -714,6 +714,11 @@ function CreateEntryModal({ entry, projects, settings, onClose, onCreate }) {
   const start = new Date(draft.start);
   const end = new Date(draft.end);
   const durationMin = differenceInMinutes(end, start);
+  const [durationInput, setDurationInput] = useState(durationToInput(durationMin));
+
+  useEffect(() => {
+    setDurationInput(durationToInput(durationMin));
+  }, [durationMin]);
 
   const setTime = (key, value) => {
     const [h, m] = value.split(":").map(Number);
@@ -735,8 +740,10 @@ function CreateEntryModal({ entry, projects, settings, onClose, onCreate }) {
           </div>
           <label className="block">
             Dauer
-            <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" value={durationToInput(durationMin)} onChange={(e) => {
-              const mins = parseDurationInput(e.target.value);
+            <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" value={durationInput} onChange={(e) => {
+              const raw = e.target.value;
+              setDurationInput(raw);
+              const mins = parseDurationInput(raw);
               if (mins === null) return;
               const d = new Date(draft.start);
               const ne = new Date(d); ne.setMinutes(ne.getMinutes() + mins);
@@ -777,6 +784,11 @@ function EntryEditor({ entry, projects, settings, onClose, onSave, onDelete }) {
   const start = new Date(entry.start);
   const end = new Date(entry.end);
   const durationMin = differenceInMinutes(end, start);
+  const [durationInput, setDurationInput] = useState(durationToInput(durationMin));
+
+  useEffect(() => {
+    setDurationInput(durationToInput(durationMin));
+  }, [durationMin]);
 
   const setTime = (key, value) => {
     const [h, m] = value.split(":").map(Number);
@@ -798,8 +810,10 @@ function EntryEditor({ entry, projects, settings, onClose, onSave, onDelete }) {
           </div>
           <label className="block">
             Dauer
-            <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" value={durationToInput(durationMin)} onChange={(e) => {
-              const mins = parseDurationInput(e.target.value);
+            <input className="mt-1 w-full bg-white/10 rounded px-2 py-1" value={durationInput} onChange={(e) => {
+              const raw = e.target.value;
+              setDurationInput(raw);
+              const mins = parseDurationInput(raw);
               if (mins === null) return;
               const d = new Date(entry.start);
               const ne = new Date(d); ne.setMinutes(ne.getMinutes() + mins);
