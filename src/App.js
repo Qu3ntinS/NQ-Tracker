@@ -388,6 +388,8 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
   const handleMouseDown = (e) => {
     if (e.button !== 0) return;
     if (e.target.closest('.entry-card')) return;
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "ns-resize";
     const minutes = getMinutesFromEvent(e);
     setDragging(true);
     setDragStart(minutes);
@@ -401,6 +403,8 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
 
   const handleMouseUp = async () => {
     if (!dragging) return;
+    document.body.style.userSelect = "";
+    document.body.style.cursor = "";
     setDragging(false);
     if (dragStart === null || dragCurrent === null) return;
     const startMin = Math.min(dragStart, dragCurrent);
