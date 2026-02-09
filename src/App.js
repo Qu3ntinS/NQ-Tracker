@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { format, startOfWeek, addDays, isSameDay, startOfDay, endOfDay, differenceInMinutes } from "date-fns";
 import { Rnd } from "react-rnd";
 import classNames from "classnames";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Plus, Settings, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Settings } from "lucide-react";
 
 const minuteHeight = 1.1; // px per minute
 const minEntryDefault = 15;
@@ -618,29 +618,6 @@ function EntryEditor({ entry, projects, onClose, onSave, onDelete }) {
   );
 }
 
-function ProjectManager({ projects, onAdd, onUpdate, onDelete }) {
-  return (
-    <div>
-      <div className="text-sm text-purple-200/70 mb-2">Projekte</div>
-      <div className="space-y-2">
-        {projects.map(p => (
-          <div key={p.id} className="flex items-center gap-2 text-sm">
-            <input type="color" value={p.color} onChange={(e) => onUpdate(p.id, { color: e.target.value })} className="w-6 h-6 rounded" />
-            <input className="flex-1 bg-white/10 rounded px-2 py-1" value={p.name} onChange={(e) => onUpdate(p.id, { name: e.target.value })} />
-            {p.id !== "default" && (
-              <button className="text-xs text-red-300" onClick={() => onDelete(p.id)}><Trash2 size={14} /></button>
-            )}
-          </div>
-        ))}
-        <button className="text-xs text-purple-200/70 hover:text-white flex items-center gap-1" onClick={() => {
-          const name = prompt("Projektname?");
-          if (!name) return;
-          onAdd(name, "#8b4dff");
-        }}><Plus size={14} /> Projekt hinzufügen</button>
-      </div>
-    </div>
-  );
-}
 
 function formatDuration(mins) {
   if (mins >= 60) {
