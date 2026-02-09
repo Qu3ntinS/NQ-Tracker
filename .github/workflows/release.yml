@@ -51,7 +51,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       RELEASE_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
 
     steps:
       - name: Checkout
@@ -63,6 +62,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Set mirrors (per OS)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            echo "ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/" >> $GITHUB_ENV
+            echo "ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/" >> $GITHUB_ENV
+          fi
 
       - name: Install deps
         run: npm ci
@@ -81,8 +89,6 @@ jobs:
       - name: Build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ELECTRON_BUILDER_BINARIES_MIRROR: ${{ matrix.os == 'windows-latest' && 'https://npmmirror.com/mirrors/electron-builder-binaries/' || 'https://github.com/electron-userland/electron-builder-binaries/releases/download' }}
-          NPM_CONFIG_ELECTRON_BUILDER_BINARIES_MIRROR: ${{ matrix.os == 'windows-latest' && 'https://npmmirror.com/mirrors/electron-builder-binaries/' || 'https://github.com/electron-userland/electron-builder-binaries/releases/download' }}
         run: npm run electron:build
 
       - name: Publish release
