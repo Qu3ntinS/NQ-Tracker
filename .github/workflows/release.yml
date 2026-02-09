@@ -86,4 +86,4 @@ jobs:
             exit 1
           fi
           gh release view "$VERSION" >/dev/null 2>&1 || gh release create "$VERSION" -t "$VERSION" -n ""
-          gh release upload "$VERSION" dist/**/* --clobber
+          gh release upload "$VERSION" dist/*.AppImage dist/*.dmg dist/*.exe dist/*.zip dist/*.yml dist/*.blockmap --clobber
