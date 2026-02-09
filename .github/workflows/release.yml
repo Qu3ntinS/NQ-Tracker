@@ -52,7 +52,6 @@ jobs:
     env:
       RELEASE_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
       ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
-      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
 
     steps:
       - name: Checkout
@@ -82,6 +81,7 @@ jobs:
       - name: Build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_BUILDER_BINARIES_MIRROR: ${{ matrix.os == 'windows-latest' && 'https://npmmirror.com/mirrors/electron-builder-binaries/' || '' }}
         run: npm run electron:build
 
       - name: Publish release
@@ -106,4 +106,10 @@ jobs:
             echo "No release artifacts found in dist/" >&2
             exit 1
           fi
-          gh release upload "$VERSION" "${files[@]}" --clobber
+          # delete existing assets (avoids 500s on clobber)
+          for f in "${files[@]}"; do
+            name=$(basename "$f")
+            gh release delete-asset "$VERSION" "$name" -y >/dev/null 2>&1 || true
+          done
+          # upload with one retry
+          gh release upload "$VERSION" "${files[@]}" || gh release upload "$VERSION" "${files[@]}"
