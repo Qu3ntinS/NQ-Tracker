@@ -439,8 +439,8 @@ function DayView({ date, entries, settings, projects, onCreateRequest, onUpdate,
             return (
               <Rnd
                 key={entry.id}
-                size={{ width: "100%", height }}
-                position={{ x: 0, y: top }}
+                size={{ width: "calc(100% - 8px)", height }}
+                position={{ x: 4, y: top }}
                 bounds="parent"
                 dragAxis="y"
                 enableResizing={{ top: true, bottom: true, left: false, right: false }}
