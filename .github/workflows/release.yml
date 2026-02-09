@@ -36,11 +36,18 @@ jobs:
 
       - name: Set tag (manual trigger)
         if: github.event_name == 'workflow_dispatch'
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
         run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9._-]+)?$ ]]; then
+            echo "Invalid version: $RELEASE_VERSION" >&2
+            exit 1
+          fi
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git tag ${{ inputs.version }}
-          git push origin ${{ inputs.version }}
+          git tag "$RELEASE_VERSION"
+          git push origin "$RELEASE_VERSION"
 
       - name: Build & Release
         env:
