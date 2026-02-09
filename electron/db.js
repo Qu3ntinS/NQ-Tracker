@@ -102,9 +102,9 @@ function listProjects() {
   return db.prepare("SELECT * FROM projects ORDER BY name ASC").all();
 }
 
-function addProject(name) {
+function addProject(name, color) {
   const id = `p_${Date.now()}`;
-  db.prepare("INSERT INTO projects (id,name,color) VALUES (?,?,?)").run(id, name, "#8b4dff");
+  db.prepare("INSERT INTO projects (id,name,color) VALUES (?,?,?)").run(id, name, color || "#8b4dff");
   return db.prepare("SELECT * FROM projects WHERE id=?").get(id);
 }
 
