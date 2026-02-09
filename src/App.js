@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { format, startOfWeek, addDays, isSameDay, startOfDay, endOfDay, differenceInMinutes } from "date-fns";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { format, startOfWeek, addDays, isSameDay, startOfDay, endOfDay, differenceInMinutes, addMinutes } from "date-fns";
 import { Rnd } from "react-rnd";
 import classNames from "classnames";
 
@@ -117,12 +117,21 @@ function App() {
 
   const goalReached = totalMinutesDay >= settings.dailyGoalHours * 60;
 
+  const goPrev = () => setDate(d => addDays(d, view === "day" ? -1 : -7));
+  const goNext = () => setDate(d => addDays(d, view === "day" ? 1 : 7));
+  const goToday = () => setDate(new Date());
+
   return (
     <div className="min-h-screen p-6">
       <div className="glass rounded-2xl p-4 mb-4 flex items-center justify-between">
         <div>
           <div className="text-sm text-purple-200/80">NQ Tracker</div>
           <div className="text-2xl font-semibold">Timetable</div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className={btnCls()} onClick={goPrev}>←</button>
+          <button className={btnCls()} onClick={goToday}>Heute</button>
+          <button className={btnCls()} onClick={goNext}>→</button>
         </div>
         <div className="flex items-center gap-2">
           <button className={btnCls(view==="day")} onClick={() => setView("day")}>Day</button>
@@ -234,6 +243,16 @@ function App() {
 function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSelect }) {
   const dayEntries = entries.filter(e => isSameDay(new Date(e.start), date));
   const totalHeight = 1440 * minuteHeight;
+  const scrollerRef = useRef(null);
+
+  useEffect(() => {
+    // auto-scroll near current time
+    const now = new Date();
+    if (!isSameDay(now, date)) return;
+    const mins = now.getHours() * 60 + now.getMinutes();
+    const y = mins * minuteHeight - 120;
+    if (scrollerRef.current) scrollerRef.current.scrollTop = Math.max(0, y);
+  }, [date]);
 
   const handleCreate = async (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -246,13 +265,17 @@ function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSele
     await onCreate({ start: start.toISOString(), end: end.toISOString(), projectId: projects[0]?.id || "default", comment: "" });
   };
 
+  const now = new Date();
+  const isToday = isSameDay(now, date);
+  const nowLineTop = (now.getHours() * 60 + now.getMinutes()) * minuteHeight;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
         <div className="text-sm text-purple-200/70">Tagesansicht</div>
         <div className="text-xs text-purple-200/60">Klicken = Eintrag</div>
       </div>
-      <div className="relative h-[720px] overflow-y-auto rounded-xl border border-white/10 bg-black/10" onClick={handleCreate}>
+      <div ref={scrollerRef} className="relative h-[720px] overflow-y-auto rounded-xl border border-white/10 bg-black/10" onClick={handleCreate}>
         <div style={{ height: totalHeight }} className="relative">
           {Array.from({ length: 24 }).map((_, h) => (
             <div key={h} className="absolute left-0 right-0 border-t border-white/5" style={{ top: h * 60 * minuteHeight }}>
@@ -260,11 +283,19 @@ function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSele
             </div>
           ))}
 
+          {isToday && (
+            <div className="absolute left-10 right-2" style={{ top: nowLineTop }}>
+              <div className="h-[1px] bg-brand-400" />
+              <div className="text-[10px] text-brand-300">{format(now, "HH:mm")}</div>
+            </div>
+          )}
+
           {dayEntries.map((entry) => {
             const start = new Date(entry.start);
             const end = new Date(entry.end);
             const top = (start.getHours() * 60 + start.getMinutes()) * minuteHeight;
-            const height = Math.max(settings.minEntryMinutes * minuteHeight, differenceInMinutes(end, start) * minuteHeight);
+            const durationMin = differenceInMinutes(end, start);
+            const height = Math.max(settings.minEntryMinutes * minuteHeight, durationMin * minuteHeight);
             return (
               <Rnd
                 key={entry.id}
@@ -294,7 +325,7 @@ function DayView({ date, entries, settings, projects, onCreate, onUpdate, onSele
               >
                 <div className="p-2 text-xs">
                   <div className="font-medium">{projects.find(p => p.id === entry.projectId)?.name || "Projekt"}</div>
-                  <div className="opacity-80">{format(start, "HH:mm")} – {format(end, "HH:mm")}</div>
+                  <div className="opacity-80">{format(start, "HH:mm")} – {format(end, "HH:mm")} · {durationMin}m</div>
                   {entry.comment && <div className="opacity-70 truncate">{entry.comment}</div>}
                 </div>
               </Rnd>
