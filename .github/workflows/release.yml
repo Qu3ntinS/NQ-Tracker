@@ -118,9 +118,5 @@ jobs:
             name=$(basename "$f")
             gh release delete-asset "$VERSION" "$name" -y >/dev/null 2>&1 || true
           done
-          # also delete known generated names that may not be in dist
-          for name in builder-debug.yml latest.yml latest-mac.yml latest-linux.yml; do
-            gh release delete-asset "$VERSION" "$name" -y >/dev/null 2>&1 || true
-          done
           # upload with one retry
           gh release upload "$VERSION" "${files[@]}" || gh release upload "$VERSION" "${files[@]}"
