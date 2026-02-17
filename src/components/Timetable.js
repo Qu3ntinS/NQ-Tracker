@@ -47,6 +47,9 @@ const getRoundedCurrentTime = () => {
         .padStart(2, "0")}`;
 };
 
+const SLOT_HEIGHT = 28; // Timetable-Zoom (größer = bessere Greifbarkeit)
+const TASK_GAP = 4; // kleiner Abstand zwischen überlappenden Tasks
+
 const Timetable = ({ tasks, onTasksChange }) => {
     const [taskDescription, setTaskDescription] = useState("");
     const [startTime, setStartTime] = useState(getRoundedCurrentTime());
@@ -80,14 +83,48 @@ const Timetable = ({ tasks, onTasksChange }) => {
         onTasksChange(updatedTasks);
     };
 
-    const getTaskStyle = (task) => {
-        const startIndex = timeSlots.indexOf(task.startTime);
-        const taskHeight = (task.duration / 15) * 20;
-        return {
-            top: `${startIndex * 20}px`,
-            height: `${taskHeight}px`,
-        };
+    const computeLayout = () => {
+        const placed = [];
+        const layout = new Map();
+
+        const sorted = [...tasks].sort((a, b) => {
+            const aIdx = timeSlots.indexOf(a.startTime);
+            const bIdx = timeSlots.indexOf(b.startTime);
+            if (aIdx !== bIdx) return aIdx - bIdx;
+            return b.duration - a.duration;
+        });
+
+        for (const task of sorted) {
+            const startIndex = timeSlots.indexOf(task.startTime);
+            const height = (task.duration / 15) * SLOT_HEIGHT;
+            const baseTop = startIndex * SLOT_HEIGHT;
+            const baseBottom = baseTop + height;
+
+            const overlaps = placed.filter(
+                (p) => baseTop < p.baseBottom && baseBottom > p.baseTop
+            );
+
+            let top = baseTop;
+            if (overlaps.length) {
+                const maxBottom = Math.max(...overlaps.map((p) => p.top + p.height));
+                top = Math.max(baseTop, maxBottom + TASK_GAP);
+            }
+
+            placed.push({ id: task.id, baseTop, baseBottom, top, height });
+            layout.set(task.id, { top: `${top}px`, height: `${height}px` });
+        }
+
+        const baseHeight = timeSlots.length * SLOT_HEIGHT;
+        const maxPlacedBottom = placed.length
+            ? Math.max(...placed.map((p) => p.top + p.height))
+            : baseHeight;
+
+        return { layout, timelineHeight: Math.max(baseHeight, maxPlacedBottom + TASK_GAP) };
     };
+
+    const { layout: taskLayout, timelineHeight } = computeLayout();
+
+    const getTaskStyle = (task) => taskLayout.get(task.id) || {};
 
     return (
         <div className="timetable-container">
@@ -121,9 +158,9 @@ const Timetable = ({ tasks, onTasksChange }) => {
                 <button onClick={addTask}>Aufgabe hinzufügen</button>
             </div>
 
-            <div className="timeline">
+            <div className="timeline" style={{ height: `${timelineHeight}px` }}>
                 {timeSlots.map((time) => (
-                    <div key={time} className="time-slot">
+                    <div key={time} className="time-slot" style={{ height: `${SLOT_HEIGHT}px` }}>
                         <span>{time}</span>
                     </div>
                 ))}
