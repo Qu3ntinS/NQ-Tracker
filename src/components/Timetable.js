@@ -47,8 +47,8 @@ const getRoundedCurrentTime = () => {
         .padStart(2, "0")}`;
 };
 
-const SLOT_HEIGHT = 28; // Timetable-Zoom (größer = bessere Greifbarkeit)
-const TASK_GAP = 4; // kleiner Abstand zwischen überlappenden Tasks
+const SLOT_HEIGHT = 40; // Timetable-Zoom (größer = bessere Greifbarkeit)
+const TASK_GAP = 6; // kleiner Abstand zwischen überlappenden Tasks
 
 const Timetable = ({ tasks, onTasksChange }) => {
     const [taskDescription, setTaskDescription] = useState("");
@@ -100,14 +100,20 @@ const Timetable = ({ tasks, onTasksChange }) => {
             const baseTop = startIndex * SLOT_HEIGHT;
             const baseBottom = baseTop + height;
 
-            const overlaps = placed.filter(
-                (p) => baseTop < p.baseBottom && baseBottom > p.baseTop
-            );
-
             let top = baseTop;
-            if (overlaps.length) {
-                const maxBottom = Math.max(...overlaps.map((p) => p.top + p.height));
-                top = Math.max(baseTop, maxBottom + TASK_GAP);
+            let hasOverlap = true;
+
+            while (hasOverlap) {
+                const overlaps = placed.filter(
+                    (p) => top < p.top + p.height && top + height > p.top
+                );
+
+                if (!overlaps.length) {
+                    hasOverlap = false;
+                } else {
+                    const maxBottom = Math.max(...overlaps.map((p) => p.top + p.height));
+                    top = Math.max(top, maxBottom + TASK_GAP);
+                }
             }
 
             placed.push({ id: task.id, baseTop, baseBottom, top, height });
